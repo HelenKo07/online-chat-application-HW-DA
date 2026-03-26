@@ -1,0 +1,148 @@
+.app-shell {
+  min-height: 100vh;
+  padding: 0.85rem;
+  display: grid;
+  gap: 0.85rem;
+}
+
+.topbar {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 1.6rem;
+  backdrop-filter: blur(18px);
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+.topbar__meta {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.profile-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.profile-chip__avatar {
+  width: 2.8rem;
+  height: 2.8rem;
+  display: grid;
+  place-items: center;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, #fb923c, #0284c7);
+  color: #fff;
+  font-weight: 700;
+}
+
+.profile-chip small {
+  display: block;
+  color: var(--muted);
+}
+
+.dashboard-grid {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.sidebar,
+.workspace,
+.members-panel {
+  border-radius: 1.75rem;
+}
+
+.sidebar {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.brand-card,
+.workspace,
+.members-panel {
+  padding: 1rem;
+}
+
+.brand-card {
+  border-radius: 1.5rem;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.workspace {
+  min-height: 22rem;
+}
+
+.workspace__stack {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.workspace__error {
+  margin-bottom: 0.8rem;
+}
+
+.members-panel {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .app-shell {
+    padding: 1rem;
+    gap: 1rem;
+  }
+
+  .topbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    padding: 1.25rem;
+  }
+
+  .topbar__meta {
+    display: flex;
+    align-items: center;
+  }
+}
+
+@media (min-width: 992px) {
+  .dashboard-grid {
+    grid-template-columns: 20rem minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .members-panel {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 1200px) {
+  .app-shell {
+    padding: 1.25rem;
+    gap: 1.25rem;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 22rem minmax(0, 1fr) 18rem;
+  }
+
+  .members-panel {
+    grid-column: auto;
+    align-self: start;
+    position: sticky;
+    top: 1.25rem;
+  }
+}
+
+@media (min-width: 1400px) {
+  .app-shell {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 23rem minmax(0, 1fr) 20rem;
+  }
+}

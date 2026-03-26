@@ -1,0 +1,183 @@
+.room-stage {
+  min-height: 100%;
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 1.5rem;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.room-stage--empty {
+  align-content: center;
+}
+
+.room-stage__hero {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 1.35rem;
+  background: var(--surface-strong);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.room-stage__hero p:last-child {
+  color: var(--muted);
+}
+
+.room-stage__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.room-stage__grid {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.message-panel,
+.composer-card {
+  padding: 1rem;
+  border-radius: 1.5rem;
+  background: rgba(255, 255, 255, 0.56);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.message-panel--empty {
+  min-height: 12rem;
+  display: grid;
+  align-content: center;
+}
+
+.message-list {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.message {
+  max-width: 100%;
+  padding: 0.95rem 1rem;
+  border-radius: 1.2rem;
+  background: var(--surface-strong);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.message--own {
+  justify-self: end;
+  background: rgba(255, 237, 213, 0.92);
+}
+
+.message--system {
+  background: rgba(15, 23, 42, 0.04);
+}
+
+.message__meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.45rem;
+}
+
+.message__meta time {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.composer-card {
+  display: grid;
+  gap: 1rem;
+}
+
+.composer-card__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.composer-card__actions small {
+  color: var(--muted);
+}
+
+.info-card {
+  padding: 1rem;
+  border-radius: 1.25rem;
+  background: var(--surface-strong);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.info-list {
+  margin: 0.75rem 0 0;
+  padding-left: 1rem;
+  color: var(--muted);
+}
+
+.members-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.member-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.95rem 1rem;
+  border-radius: 1.2rem;
+  background: var(--surface-strong);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.member-card small,
+.members-empty {
+  color: var(--muted);
+}
+
+.role-badge {
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  text-transform: lowercase;
+  background: #e2e8f0;
+}
+
+.role-badge--owner {
+  background: rgba(234, 88, 12, 0.14);
+  color: #9a3412;
+}
+
+.role-badge--admin {
+  background: rgba(2, 132, 199, 0.14);
+  color: #075985;
+}
+
+.role-badge--member {
+  background: rgba(15, 23, 42, 0.08);
+  color: #334155;
+}
+
+@media (min-width: 768px) {
+  .room-stage {
+    padding: 1.25rem;
+  }
+
+  .room-stage__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .message {
+    max-width: 78%;
+  }
+
+  .composer-card__actions {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+@media (min-width: 992px) {
+  .room-stage__hero {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+}

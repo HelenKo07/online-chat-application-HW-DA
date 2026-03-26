@@ -1,0 +1,195 @@
+:root {
+  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color: #1f2937;
+  background:
+    radial-gradient(circle at top left, rgba(249, 115, 22, 0.24), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(14, 165, 233, 0.2), transparent 28%),
+    linear-gradient(160deg, #fff7ed 0%, #f8fafc 50%, #eff6ff 100%);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  --surface: rgba(255, 255, 255, 0.8);
+  --surface-strong: rgba(255, 255, 255, 0.94);
+  --surface-muted: rgba(255, 255, 255, 0.64);
+  --border: rgba(148, 163, 184, 0.28);
+  --text: #172033;
+  --muted: #5f6d85;
+  --accent: #ea580c;
+  --accent-strong: #c2410c;
+  --shadow: 0 24px 60px rgba(15, 23, 42, 0.14);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 360px;
+}
+
+body {
+  margin: 0;
+  min-width: 360px;
+  min-height: 100vh;
+  color: var(--text);
+}
+
+body,
+input,
+textarea,
+select,
+button {
+  font: inherit;
+}
+
+button,
+input,
+textarea,
+select {
+  border: 0;
+}
+
+button {
+  cursor: pointer;
+}
+
+textarea {
+  resize: vertical;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+.eyebrow {
+  margin-bottom: 0.3rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0.75rem 1rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--border);
+  color: var(--text);
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.button:hover {
+  transform: translateY(-1px);
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.button--primary {
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+}
+
+.button--full {
+  width: 100%;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  background: #182236;
+  color: #fff;
+  font-size: 0.78rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.field span {
+  font-size: 0.92rem;
+  color: var(--muted);
+}
+
+.field input,
+.field textarea,
+.field select {
+  width: 100%;
+  padding: 0.95rem 1rem;
+  border-radius: 1.1rem;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--text);
+}
+
+.panel,
+.brand-card,
+.workspace,
+.members-panel,
+.loading-card,
+.auth-card {
+  backdrop-filter: blur(18px);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+.panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.form-error {
+  padding: 0.85rem 1rem;
+  border-radius: 1rem;
+  background: rgba(220, 38, 38, 0.08);
+  color: #b91c1c;
+}
+
+@media (min-width: 768px) {
+  .button {
+    min-height: 46px;
+  }
+}
+
+@media (min-width: 992px) {
+  :root {
+    --shadow: 0 28px 70px rgba(15, 23, 42, 0.16);
+  }
+}
+
+@media (min-width: 1200px) {
+  .eyebrow {
+    font-size: 0.8rem;
+  }
+}
+
+@media (min-width: 1400px) {
+  body {
+    font-size: 1.02rem;
+  }
+}
