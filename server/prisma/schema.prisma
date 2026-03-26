@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RoomVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+enum RoomRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  username      String    @unique
+  passwordHash  String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      Session[]
+  ownedRooms    Room[]    @relation("OwnedRooms")
+  roomMemberships RoomMember[]
+  messages      Message[]
+}
+
+model Session {
+  id            String   @id @default(cuid())
+  tokenHash     String   @unique
+  expiresAt     DateTime
+  userAgent     String?
+  ipAddress     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Room {
+  id            String         @id @default(cuid())
+  name          String         @unique
+  description   String
+  visibility    RoomVisibility @default(PUBLIC)
+  ownerId       String
+  owner         User           @relation("OwnedRooms", fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  memberships   RoomMember[]
+  messages      Message[]
+
+  @@index([visibility])
+  @@index([ownerId])
+}
+
+model RoomMember {
+  id          String   @id @default(cuid())
+  roomId      String
+  userId      String
+  role        RoomRole @default(MEMBER)
+  joinedAt    DateTime @default(now())
+  room        Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
+  @@index([roomId])
+  @@index([userId])
+}
+
+model Message {
+  id         String   @id @default(cuid())
+  roomId     String
+  authorId   String
+  text       String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  room       Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  author     User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([roomId, createdAt])
+  @@index([authorId])
+}
