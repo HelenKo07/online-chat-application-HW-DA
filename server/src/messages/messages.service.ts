@@ -11,12 +11,41 @@ import { DatabaseService } from '../database/database.service';
 export class MessagesService {
   constructor(private readonly database: DatabaseService) {}
 
-  async listRoomMessages(roomId: string, userId: string) {
+  async listRoomMessages(
+    roomId: string,
+    userId: string,
+    options?: { before?: string; limit?: number },
+  ) {
     await this.ensureRoomMember(roomId, userId);
+    const pageSize = options?.limit ?? 30;
+    const beforeMessageId = options?.before;
+
+    let beforeCreatedAt: Date | undefined;
+
+    if (beforeMessageId) {
+      const beforeMessage = await this.database.message.findFirst({
+        where: {
+          id: beforeMessageId,
+          roomId,
+        },
+        select: {
+          createdAt: true,
+        },
+      });
+
+      beforeCreatedAt = beforeMessage?.createdAt;
+    }
 
     const messages = await this.database.message.findMany({
       where: {
         roomId,
+        ...(beforeCreatedAt
+          ? {
+              createdAt: {
+                lt: beforeCreatedAt,
+              },
+            }
+          : {}),
       },
       include: {
         author: {
@@ -27,29 +56,39 @@ export class MessagesService {
         },
       },
       orderBy: {
-        createdAt: 'asc',
+        createdAt: 'desc',
       },
-      take: 100,
+      take: pageSize + 1,
     });
 
-    await this.database.roomRead.upsert({
-      where: {
-        userId_roomId: {
+    if (!beforeMessageId) {
+      await this.database.roomRead.upsert({
+        where: {
+          userId_roomId: {
+            userId,
+            roomId,
+          },
+        },
+        update: {
+          lastReadAt: new Date(),
+        },
+        create: {
           userId,
           roomId,
+          lastReadAt: new Date(),
         },
-      },
-      update: {
-        lastReadAt: new Date(),
-      },
-      create: {
-        userId,
-        roomId,
-        lastReadAt: new Date(),
-      },
-    });
+      });
+    }
 
-    return messages.map((message) => this.toClientMessage(message, userId));
+    const hasMore = messages.length > pageSize;
+    const page = hasMore ? messages.slice(0, pageSize) : messages;
+    const normalizedPage = [...page].reverse();
+
+    return {
+      messages: normalizedPage.map((message) => this.toClientMessage(message, userId)),
+      nextCursor: hasMore ? page[page.length - 1].id : null,
+      hasMore,
+    };
   }
 
   async createRoomMessage(

@@ -53,6 +53,25 @@
   gap: 0.9rem;
 }
 
+.account-panel {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.account-panel__block {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.85rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.68);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.account-panel__block--danger {
+  background: rgba(254, 226, 226, 0.42);
+  border-color: rgba(220, 38, 38, 0.2);
+}
+
 @media (min-width: 768px) {
   .room-card {
     padding: 1rem 1.05rem;

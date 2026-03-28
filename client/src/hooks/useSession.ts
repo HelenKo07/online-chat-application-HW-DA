@@ -67,6 +67,10 @@ export function useSession() {
     }
   };
 
+  const clearSession = () => {
+    setUser(null);
+  };
+
   return {
     user,
     isLoading,
@@ -74,5 +78,6 @@ export function useSession() {
     error,
     authenticate,
     logout,
+    clearSession,
   };
 }

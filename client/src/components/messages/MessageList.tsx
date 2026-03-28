@@ -9,6 +9,9 @@ type MessageListProps = {
   isMember: boolean;
   canModerate: boolean;
   isDeleting: boolean;
+  hasMore: boolean;
+  isLoadingOlder: boolean;
+  onLoadOlder: () => Promise<void>;
   onDeleteMessage: (messageId: string) => Promise<void>;
 };
 
@@ -19,6 +22,9 @@ export function MessageList({
   isMember,
   canModerate,
   isDeleting,
+  hasMore,
+  isLoadingOlder,
+  onLoadOlder,
   onDeleteMessage,
 }: MessageListProps) {
   const [pendingDeleteMessage, setPendingDeleteMessage] = useState<{
@@ -55,6 +61,19 @@ export function MessageList({
 
   return (
     <section className="message-panel">
+      {hasMore ? (
+        <div className="message-panel__older">
+          <button
+            className="button"
+            type="button"
+            onClick={() => void onLoadOlder()}
+            disabled={isLoadingOlder}
+          >
+            {isLoadingOlder ? 'Loading older...' : 'Load older messages'}
+          </button>
+        </div>
+      ) : null}
+
       <div className="message-list">
         {messages.length === 0 ? (
           <article className="message message--system">

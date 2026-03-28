@@ -8,7 +8,7 @@ const AFK_WINDOW_MS = 1000 * 60;
 export class PresenceService {
   constructor(private readonly database: DatabaseService) {}
 
-  async recordHeartbeat(userId: string, isActive: boolean) {
+  async recordHeartbeat(userId: string, isActive: boolean, _tabId: string) {
     const now = new Date();
 
     await this.database.userPresence.upsert({

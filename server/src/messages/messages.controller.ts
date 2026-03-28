@@ -1,7 +1,8 @@
-import { Body, Controller, Delete, Get, Param, Post, Req } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Query, Req } from '@nestjs/common';
 import { Request } from 'express';
 import { SessionAuthService } from '../auth/session-auth.service';
 import { CreateMessageDto } from './dto/create-message.dto';
+import { ListRoomMessagesDto } from './dto/list-room-messages.dto';
 import { MessagesService } from './messages.service';
 
 @Controller('rooms/:roomId/messages')
@@ -12,12 +13,14 @@ export class MessagesController {
   ) {}
 
   @Get()
-  async listMessages(@Param('roomId') roomId: string, @Req() request: Request) {
+  async listMessages(
+    @Param('roomId') roomId: string,
+    @Query() query: ListRoomMessagesDto,
+    @Req() request: Request,
+  ) {
     const user = await this.sessionAuthService.requireUser(request);
 
-    return {
-      messages: await this.messagesService.listRoomMessages(roomId, user.id),
-    };
+    return this.messagesService.listRoomMessages(roomId, user.id, query);
   }
 
   @Post()

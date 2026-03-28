@@ -1,3 +1,4 @@
+import { AccountPanel } from './components/account/AccountPanel';
 import { AttachmentList } from './components/attachments/AttachmentList';
 import { AttachmentUploader } from './components/attachments/AttachmentUploader';
 import { AuthScreen } from './components/auth/AuthScreen';
@@ -10,6 +11,7 @@ import { AppHeader } from './components/layout/AppHeader';
 import { MessageComposer } from './components/messages/MessageComposer';
 import { MessageList } from './components/messages/MessageList';
 import { useDirectChats } from './hooks/useDirectChats';
+import { useAccountSettings } from './hooks/useAccountSettings';
 import { useFriends } from './hooks/useFriends';
 import { usePresenceHeartbeat } from './hooks/usePresenceHeartbeat';
 import { useRoomAttachments } from './hooks/useRoomAttachments';
@@ -27,6 +29,7 @@ import { useState } from 'react';
 export default function App() {
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const session = useSession();
+  const account = useAccountSettings(Boolean(session.user), session.user?.email);
   const rooms = useRooms(Boolean(session.user));
   const friends = useFriends(Boolean(session.user));
   const directChats = useDirectChats(Boolean(session.user), friends.friends);
@@ -106,6 +109,20 @@ export default function App() {
             onSubmit={friends.sendRequest}
             isSubmitting={friends.isMutating}
           />
+          <AccountPanel
+            sessions={account.sessions}
+            defaultResetEmail={account.defaultResetEmail}
+            isLoadingSessions={account.isLoadingSessions}
+            isMutating={account.isMutating}
+            notice={account.notice}
+            onRevokeSession={account.revokeSession}
+            onChangePassword={account.changePassword}
+            onResetPassword={account.resetPassword}
+            onDeleteAccount={async (password) => {
+              await account.deleteAccount(password);
+              session.clearSession();
+            }}
+          />
         </aside>
 
         <main className="workspace">
@@ -126,6 +143,7 @@ export default function App() {
           {roomAttachments.error ? (
             <p className="form-error workspace__error">{roomAttachments.error}</p>
           ) : null}
+          {account.error ? <p className="form-error workspace__error">{account.error}</p> : null}
           {rooms.isLoading ? (
             <section className="room-stage room-stage--empty">
               <p className="eyebrow">Rooms</p>
@@ -150,6 +168,9 @@ export default function App() {
                 isMember={Boolean(rooms.selectedRoom?.isMember)}
                 canModerate={Boolean(roomModeration.canModerate)}
                 isDeleting={roomMessages.isDeleting}
+                hasMore={roomMessages.hasMore}
+                isLoadingOlder={roomMessages.isLoadingOlder}
+                onLoadOlder={roomMessages.loadOlder}
                 onDeleteMessage={roomMessages.deleteMessage}
               />
               <MessageComposer

@@ -8,7 +8,10 @@ export function useRoomMessages(
   onMessagesRead?: () => Promise<void> | void,
 ) {
   const [messages, setMessages] = useState<RoomMessage[]>([]);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingOlder, setIsLoadingOlder] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -16,6 +19,8 @@ export function useRoomMessages(
   useEffect(() => {
     if (!roomId || !enabled) {
       setMessages([]);
+      setNextCursor(null);
+      setHasMore(false);
       return;
     }
 
@@ -24,11 +29,15 @@ export function useRoomMessages(
       setError(null);
 
       try {
-        const response = await api.getRoomMessages(roomId);
+        const response = await api.getRoomMessages(roomId, { limit: 30 });
         setMessages(response.messages);
+        setNextCursor(response.nextCursor);
+        setHasMore(response.hasMore);
         await onMessagesRead?.();
       } catch (caughtError) {
         setMessages([]);
+        setNextCursor(null);
+        setHasMore(false);
         setError(caughtError instanceof Error ? caughtError.message : 'Failed to load messages');
       } finally {
         setIsLoading(false);
@@ -55,6 +64,31 @@ export function useRoomMessages(
     }
   };
 
+  const loadOlder = async () => {
+    if (!roomId || !enabled || !hasMore || !nextCursor) {
+      return;
+    }
+
+    setIsLoadingOlder(true);
+    setError(null);
+
+    try {
+      const response = await api.getRoomMessages(roomId, {
+        before: nextCursor,
+        limit: 30,
+      });
+
+      setMessages((current) => [...response.messages, ...current]);
+      setNextCursor(response.nextCursor);
+      setHasMore(response.hasMore);
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : 'Failed to load older messages');
+      throw caughtError;
+    } finally {
+      setIsLoadingOlder(false);
+    }
+  };
+
   const deleteMessage = async (messageId: string) => {
     if (!roomId) {
       return;
@@ -77,10 +111,13 @@ export function useRoomMessages(
   return {
     messages,
     isLoading,
+    isLoadingOlder,
+    hasMore,
     isSending,
     isDeleting,
     error,
     sendMessage,
+    loadOlder,
     deleteMessage,
   };
 }

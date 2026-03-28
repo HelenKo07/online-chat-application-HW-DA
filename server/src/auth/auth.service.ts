@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from 'crypto';
@@ -11,6 +12,11 @@ import { UsersService } from '../users/users.service';
 const SESSION_COOKIE_NAME = 'chat_session';
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 30;
 const PASSWORD_SALT_BYTES = 16;
+
+type SessionMeta = {
+  userAgent?: string;
+  ipAddress?: string;
+};
 
 @Injectable()
 export class AuthService {
@@ -23,7 +29,10 @@ export class AuthService {
     return SESSION_COOKIE_NAME;
   }
 
-  async register(input: { email: string; username: string; password: string }) {
+  async register(
+    input: { email: string; username: string; password: string },
+    meta?: SessionMeta,
+  ) {
     const email = input.email.trim().toLowerCase();
     const username = input.username.trim().toLowerCase();
 
@@ -47,7 +56,7 @@ export class AuthService {
       passwordHash,
     });
 
-    const session = await this.createSession(user.id);
+    const session = await this.createSession(user.id, meta);
 
     return {
       session,
@@ -55,7 +64,7 @@ export class AuthService {
     };
   }
 
-  async login(input: { email: string; password: string }) {
+  async login(input: { email: string; password: string }, meta?: SessionMeta) {
     const email = input.email.trim().toLowerCase();
     const user = await this.usersService.findByEmail(email);
 
@@ -63,7 +72,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    const session = await this.createSession(user.id);
+    const session = await this.createSession(user.id, meta);
 
     return {
       session,
@@ -111,6 +120,102 @@ export class AuthService {
     return this.toSafeUser(session.user);
   }
 
+  async listSessions(userId: string, rawToken?: string) {
+    const currentTokenHash = rawToken ? this.hashSessionToken(rawToken) : null;
+    const sessions = await this.database.session.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return sessions.map((session) => ({
+      id: session.id,
+      createdAt: session.createdAt,
+      expiresAt: session.expiresAt,
+      userAgent: session.userAgent,
+      ipAddress: session.ipAddress,
+      isCurrent: currentTokenHash === session.tokenHash,
+    }));
+  }
+
+  async revokeSession(userId: string, sessionId: string) {
+    await this.database.session.deleteMany({
+      where: {
+        id: sessionId,
+        userId,
+      },
+    });
+
+    return { success: true };
+  }
+
+  async changePassword(
+    userId: string,
+    input: { currentPassword: string; newPassword: string },
+  ) {
+    if (input.currentPassword === input.newPassword) {
+      throw new BadRequestException('New password must differ from current password');
+    }
+
+    const user = await this.usersService.findById(userId);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (!this.verifyPassword(input.currentPassword, user.passwordHash)) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+
+    await this.database.user.update({
+      where: { id: userId },
+      data: {
+        passwordHash: this.hashPassword(input.newPassword),
+      },
+    });
+
+    return { success: true };
+  }
+
+  async resetPassword(input: { email: string; newPassword: string }) {
+    const email = input.email.trim().toLowerCase();
+    const user = await this.usersService.findByEmail(email);
+
+    if (!user) {
+      return { success: true };
+    }
+
+    await this.database.user.update({
+      where: {
+        id: user.id,
+      },
+      data: {
+        passwordHash: this.hashPassword(input.newPassword),
+      },
+    });
+
+    return { success: true };
+  }
+
+  async deleteAccount(userId: string, currentPassword: string) {
+    const user = await this.usersService.findById(userId);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (!this.verifyPassword(currentPassword, user.passwordHash)) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+
+    await this.database.user.delete({
+      where: {
+        id: userId,
+      },
+    });
+
+    return { success: true };
+  }
+
   buildSessionCookie(token: string) {
     return {
       name: SESSION_COOKIE_NAME,
@@ -137,13 +242,15 @@ export class AuthService {
     };
   }
 
-  private async createSession(userId: string) {
+  private async createSession(userId: string, meta?: SessionMeta) {
     const token = randomBytes(48).toString('hex');
     const session = await this.database.session.create({
       data: {
         userId,
         tokenHash: this.hashSessionToken(token),
         expiresAt: new Date(Date.now() + SESSION_TTL_MS),
+        userAgent: meta?.userAgent?.slice(0, 500) || null,
+        ipAddress: meta?.ipAddress?.slice(0, 120) || null,
       },
     });
 

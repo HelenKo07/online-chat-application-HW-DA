@@ -1,4 +1,5 @@
 import {
+  ActiveSession,
   AuthUser,
   CreateRoomState,
   DirectChatSummary,
@@ -9,6 +10,7 @@ import {
   RoomAttachment,
   RoomInvitation,
   Room,
+  RoomMessagePage,
   RoomMessage,
 } from '../types/api';
 
@@ -46,9 +48,29 @@ export const api = {
   getRoomAttachmentDownloadUrl: (roomId: string, attachmentId: string) =>
     `${API_BASE}/rooms/${roomId}/attachments/${attachmentId}/download`,
   me: async () => apiRequest<{ user: AuthUser }>('/auth/me'),
-  heartbeat: async (payload: { isActive: boolean }) =>
+  heartbeat: async (payload: { isActive: boolean; tabId: string }) =>
     apiRequest<{ status: 'ok'; recordedAt: string }>('/presence/heartbeat', {
       method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  getSessions: async () => apiRequest<{ sessions: ActiveSession[] }>('/auth/sessions'),
+  revokeSession: async (sessionId: string) =>
+    apiRequest<{ success: true }>(`/auth/sessions/${sessionId}`, {
+      method: 'DELETE',
+    }),
+  changePassword: async (payload: { currentPassword: string; newPassword: string }) =>
+    apiRequest<{ success: true }>('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  resetPassword: async (payload: { email: string; newPassword: string }) =>
+    apiRequest<{ success: true }>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  deleteAccount: async (payload: { currentPassword: string }) =>
+    apiRequest<{ success: true }>('/auth/account', {
+      method: 'DELETE',
       body: JSON.stringify(payload),
     }),
   login: async (payload: { email: string; password: string }) =>
@@ -76,8 +98,20 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
-  getRoomMessages: async (roomId: string) =>
-    apiRequest<{ messages: RoomMessage[] }>(`/rooms/${roomId}/messages`),
+  getRoomMessages: async (roomId: string, options?: { before?: string; limit?: number }) => {
+    const params = new URLSearchParams();
+    if (options?.before) {
+      params.set('before', options.before);
+    }
+    if (options?.limit) {
+      params.set('limit', String(options.limit));
+    }
+
+    const query = params.toString();
+    return apiRequest<RoomMessagePage>(
+      `/rooms/${roomId}/messages${query ? `?${query}` : ''}`,
+    );
+  },
   sendRoomMessage: async (roomId: string, payload: { text: string }) =>
     apiRequest<{ message: RoomMessage }>(`/rooms/${roomId}/messages`, {
       method: 'POST',

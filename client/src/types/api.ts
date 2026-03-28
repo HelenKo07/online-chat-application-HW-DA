@@ -5,6 +5,15 @@ export type AuthUser = {
   createdAt: string;
 };
 
+export type ActiveSession = {
+  id: string;
+  createdAt: string;
+  expiresAt: string;
+  userAgent: string | null;
+  ipAddress: string | null;
+  isCurrent: boolean;
+};
+
 export type RoomMember = {
   id: string;
   username: string;
@@ -70,6 +79,12 @@ export type RoomMessage = {
     id: string;
     username: string;
   };
+};
+
+export type RoomMessagePage = {
+  messages: RoomMessage[];
+  nextCursor: string | null;
+  hasMore: boolean;
 };
 
 export type RoomAttachment = {

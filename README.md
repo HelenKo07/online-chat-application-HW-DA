@@ -1,6 +1,6 @@
 # Online Chat Application HW
 
-Stages 1-8 establish the technical foundation for a classic web chat application,
+Stages 1-9 establish the technical foundation for a classic web chat application,
 including authentication, public room management, persistent room messages,
 friends, direct messaging, presence tracking, unread indicators, room moderation,
 and room attachments stored on the local filesystem.
@@ -136,8 +136,18 @@ This repository currently includes:
 - store files on local server filesystem (`/app/uploads` in Docker)
 - persist metadata in PostgreSQL through `RoomAttachment`
 
+## Full-spec alignment implemented in stage 9
+
+- multi-tab presence heartbeat support using per-tab client activity aggregation
+- active sessions screen with selective session revocation
+- password change for logged-in users
+- password reset endpoint (without email verification flow)
+- account deletion endpoint with password confirmation
+- paginated room history API and frontend older-message loading for infinite-scroll style access
+- UI polish through account management panels and improved moderation ergonomics
+
 ## Next implementation steps
 
 - realtime transport with Socket.IO
 - richer message features like replies and editing
-- user-to-user bans, active sessions screen, and account deletion flows
+- user-to-user bans and richer attachment controls (preview, delete, moderation logs)

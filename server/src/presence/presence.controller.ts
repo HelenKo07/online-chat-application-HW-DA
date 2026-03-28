@@ -17,6 +17,6 @@ export class PresenceController {
     @Req() request: Request,
   ) {
     const user = await this.sessionAuthService.requireUser(request);
-    return this.presenceService.recordHeartbeat(user.id, body.isActive);
+    return this.presenceService.recordHeartbeat(user.id, body.isActive, body.tabId);
   }
 }
