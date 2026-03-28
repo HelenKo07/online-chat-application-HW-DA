@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { RoomRole } from '@prisma/client';
 import { SessionUser } from '../common/session-user.type';
 import { DatabaseService } from '../database/database.service';
 
@@ -29,6 +30,23 @@ export class MessagesService {
         createdAt: 'asc',
       },
       take: 100,
+    });
+
+    await this.database.roomRead.upsert({
+      where: {
+        userId_roomId: {
+          userId,
+          roomId,
+        },
+      },
+      update: {
+        lastReadAt: new Date(),
+      },
+      create: {
+        userId,
+        roomId,
+        lastReadAt: new Date(),
+      },
     });
 
     return messages.map((message) => this.toClientMessage(message, userId));
@@ -58,6 +76,56 @@ export class MessagesService {
     });
 
     return this.toClientMessage(message, user.id);
+  }
+
+  async deleteRoomMessage(roomId: string, messageId: string, userId: string) {
+    const message = await this.database.message.findFirst({
+      where: {
+        id: messageId,
+        roomId,
+      },
+      select: {
+        id: true,
+        authorId: true,
+      },
+    });
+
+    if (!message) {
+      throw new NotFoundException('Message not found');
+    }
+
+    if (message.authorId !== userId) {
+      const membership = await this.database.roomMember.findUnique({
+        where: {
+          roomId_userId: {
+            roomId,
+            userId,
+          },
+        },
+        select: {
+          role: true,
+        },
+      });
+
+      if (
+        !membership ||
+        (membership.role !== RoomRole.OWNER && membership.role !== RoomRole.ADMIN)
+      ) {
+        throw new ForbiddenException('Only admins can delete messages by other users');
+      }
+    }
+
+    await this.database.message.delete({
+      where: {
+        id: message.id,
+      },
+    });
+
+    return {
+      success: true,
+      roomId,
+      messageId,
+    };
   }
 
   private async ensureRoomMember(roomId: string, userId: string) {

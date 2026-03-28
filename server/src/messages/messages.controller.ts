@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Req } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Req } from '@nestjs/common';
 import { Request } from 'express';
 import { SessionAuthService } from '../auth/session-auth.service';
 import { CreateMessageDto } from './dto/create-message.dto';
@@ -31,5 +31,15 @@ export class MessagesController {
     return {
       message: await this.messagesService.createRoomMessage(roomId, user, body),
     };
+  }
+
+  @Delete(':messageId')
+  async deleteMessage(
+    @Param('roomId') roomId: string,
+    @Param('messageId') messageId: string,
+    @Req() request: Request,
+  ) {
+    const user = await this.sessionAuthService.requireUser(request);
+    return this.messagesService.deleteRoomMessage(roomId, messageId, user.id);
   }
 }

@@ -28,7 +28,11 @@ export class AppService {
         'room-memberships',
         'messages',
         'friends',
+        'direct-chats',
+        'direct-messages',
         'presence',
+        'room-unread',
+        'direct-unread',
       ],
     };
   }

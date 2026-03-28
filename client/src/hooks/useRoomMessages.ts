@@ -2,7 +2,11 @@ import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { RoomMessage } from '../types/api';
 
-export function useRoomMessages(roomId: string | null, enabled: boolean) {
+export function useRoomMessages(
+  roomId: string | null,
+  enabled: boolean,
+  onMessagesRead?: () => Promise<void> | void,
+) {
   const [messages, setMessages] = useState<RoomMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
@@ -21,6 +25,7 @@ export function useRoomMessages(roomId: string | null, enabled: boolean) {
       try {
         const response = await api.getRoomMessages(roomId);
         setMessages(response.messages);
+        await onMessagesRead?.();
       } catch (caughtError) {
         setMessages([]);
         setError(caughtError instanceof Error ? caughtError.message : 'Failed to load messages');

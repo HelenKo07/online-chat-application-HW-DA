@@ -1,5 +1,6 @@
 .create-room,
-.panel {
+.panel,
+.friend-form {
   border-radius: 1.5rem;
   padding: 1rem;
 }
@@ -45,6 +46,11 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
+}
+
+.friend-form {
+  display: grid;
+  gap: 0.9rem;
 }
 
 @media (min-width: 768px) {

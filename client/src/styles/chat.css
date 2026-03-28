@@ -116,6 +116,61 @@
   gap: 0.75rem;
 }
 
+.friends-panel,
+.direct-panel {
+  display: grid;
+  gap: 1rem;
+}
+
+.friends-list,
+.direct-list,
+.request-group {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.friend-card,
+.request-card {
+  width: 100%;
+  padding: 0.9rem 1rem;
+  text-align: left;
+  border-radius: 1.15rem;
+  background: var(--surface-strong);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.friend-card--active {
+  outline: 2px solid rgba(234, 88, 12, 0.28);
+}
+
+.friend-card small,
+.request-card small,
+.muted-copy {
+  color: var(--muted);
+}
+
+.request-card__actions {
+  margin-top: 0.75rem;
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.direct-layout {
+  display: grid;
+  gap: 1rem;
+}
+
+.direct-thread {
+  display: grid;
+  gap: 1rem;
+}
+
+.direct-thread__header {
+  display: grid;
+  gap: 0.25rem;
+}
+
 .member-card {
   display: flex;
   align-items: center;
@@ -127,9 +182,34 @@
   border: 1px solid rgba(148, 163, 184, 0.2);
 }
 
+.member-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
 .member-card small,
 .members-empty {
   color: var(--muted);
+}
+
+.presence-dot {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 999px;
+  background: #94a3b8;
+}
+
+.presence-dot--online {
+  background: #16a34a;
+}
+
+.presence-dot--afk {
+  background: #d97706;
+}
+
+.presence-dot--offline {
+  background: #94a3b8;
 }
 
 .role-badge {
@@ -172,6 +252,11 @@
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
+  }
+
+  .direct-layout {
+    grid-template-columns: minmax(14rem, 18rem) minmax(0, 1fr);
+    align-items: start;
   }
 }
 

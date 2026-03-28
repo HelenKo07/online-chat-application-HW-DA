@@ -1,9 +1,15 @@
 import { AuthScreen } from './components/auth/AuthScreen';
 import { RoomStage } from './components/chat/RoomStage';
 import { MemberPanel } from './components/chat/MemberPanel';
+import { DirectChatPanel } from './components/direct/DirectChatPanel';
+import { FriendRequestForm } from './components/friends/FriendRequestForm';
+import { FriendsPanel } from './components/friends/FriendsPanel';
 import { AppHeader } from './components/layout/AppHeader';
 import { MessageComposer } from './components/messages/MessageComposer';
 import { MessageList } from './components/messages/MessageList';
+import { useDirectChats } from './hooks/useDirectChats';
+import { useFriends } from './hooks/useFriends';
+import { usePresenceHeartbeat } from './hooks/usePresenceHeartbeat';
 import { CreateRoomForm } from './components/rooms/CreateRoomForm';
 import { RoomList } from './components/rooms/RoomList';
 import { useRoomMessages } from './hooks/useRoomMessages';
@@ -13,9 +19,13 @@ import { useSession } from './hooks/useSession';
 export default function App() {
   const session = useSession();
   const rooms = useRooms(Boolean(session.user));
+  const friends = useFriends(Boolean(session.user));
+  const directChats = useDirectChats(Boolean(session.user), friends.friends);
+  usePresenceHeartbeat(Boolean(session.user));
   const roomMessages = useRoomMessages(
     rooms.selectedRoom?.id ?? null,
     Boolean(session.user && rooms.selectedRoom?.isMember),
+    rooms.refreshRooms,
   );
 
   if (session.isLoading) {
@@ -65,10 +75,18 @@ export default function App() {
             selectedRoomId={rooms.selectedRoomId}
             onSelect={rooms.setSelectedRoomId}
           />
+          <FriendRequestForm
+            onSubmit={friends.sendRequest}
+            isSubmitting={friends.isMutating}
+          />
         </aside>
 
         <main className="workspace">
           {rooms.error ? <p className="form-error workspace__error">{rooms.error}</p> : null}
+          {friends.error ? <p className="form-error workspace__error">{friends.error}</p> : null}
+          {directChats.error ? (
+            <p className="form-error workspace__error">{directChats.error}</p>
+          ) : null}
           {roomMessages.error ? (
             <p className="form-error workspace__error">{roomMessages.error}</p>
           ) : null}
@@ -95,6 +113,26 @@ export default function App() {
                 canSend={Boolean(rooms.selectedRoom?.isMember)}
                 isSending={roomMessages.isSending}
                 onSend={roomMessages.sendMessage}
+              />
+              <FriendsPanel
+                friends={friends.friends}
+                incomingRequests={friends.incomingRequests}
+                outgoingRequests={friends.outgoingRequests}
+                isMutating={friends.isMutating}
+                onAccept={friends.acceptRequest}
+                onDecline={friends.declineRequest}
+                onSelectFriend={directChats.setSelectedFriendId}
+                selectedFriendId={directChats.selectedFriendId}
+              />
+              <DirectChatPanel
+                chats={directChats.chats}
+                selectedFriend={directChats.selectedFriend}
+                messages={directChats.messages}
+                isLoadingChats={directChats.isLoadingChats}
+                isLoadingMessages={directChats.isLoadingMessages}
+                isSending={directChats.isSending}
+                onSelectFriend={directChats.setSelectedFriendId}
+                onSendMessage={directChats.sendMessage}
               />
             </div>
           )}

@@ -40,6 +40,18 @@ export function useRooms(enabled: boolean) {
     void loadRooms();
   }, [enabled]);
 
+  useEffect(() => {
+    if (!enabled) {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      void loadRooms();
+    }, 15000);
+
+    return () => window.clearInterval(intervalId);
+  }, [enabled, selectedRoomId]);
+
   const createRoom = async (payload: CreateRoomState) => {
     setIsMutating(true);
     setError(null);

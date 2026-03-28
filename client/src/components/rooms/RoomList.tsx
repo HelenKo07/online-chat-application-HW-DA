@@ -27,7 +27,7 @@ export function RoomList({ rooms, selectedRoomId, onSelect }: RoomListProps) {
               <small>{room.description}</small>
             </div>
             <div className="room-card__meta">
-              <span className="pill">{room.membersCount}</span>
+              <span className="pill">{room.unreadCount > 0 ? room.unreadCount : room.membersCount}</span>
               <small>{room.isMember ? 'Joined' : room.visibility}</small>
             </div>
           </button>

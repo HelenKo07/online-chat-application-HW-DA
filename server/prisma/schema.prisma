@@ -29,6 +29,20 @@ model User {
   ownedRooms    Room[]    @relation("OwnedRooms")
   roomMemberships RoomMember[]
   messages      Message[]
+  sentFriendRequests     FriendRequest[] @relation("FriendRequestSender")
+  receivedFriendRequests FriendRequest[] @relation("FriendRequestReceiver")
+  friendshipsLow         Friendship[]    @relation("FriendshipLowUser")
+  friendshipsHigh        Friendship[]    @relation("FriendshipHighUser")
+  directChatsLow         DirectChat[]    @relation("DirectChatLowUser")
+  directChatsHigh        DirectChat[]    @relation("DirectChatHighUser")
+  directMessages         DirectMessage[]
+  presence              UserPresence?
+  roomReads             RoomRead[]
+  directChatReads       DirectChatRead[]
+  roomBansReceived      RoomBan[]        @relation("RoomBanTarget")
+  roomBansIssued        RoomBan[]        @relation("RoomBanIssuer")
+  roomInvitationsReceived RoomInvitation[] @relation("RoomInvitationTarget")
+  roomInvitationsIssued   RoomInvitation[] @relation("RoomInvitationIssuer")
 }
 
 model Session {
@@ -57,9 +71,44 @@ model Room {
   updatedAt     DateTime       @updatedAt
   memberships   RoomMember[]
   messages      Message[]
+  reads         RoomRead[]
+  bans          RoomBan[]
+  invitations   RoomInvitation[]
 
   @@index([visibility])
   @@index([ownerId])
+}
+
+model RoomBan {
+  id          String   @id @default(cuid())
+  roomId      String
+  userId      String
+  bannedById  String
+  reason      String?
+  createdAt   DateTime @default(now())
+  room        Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user        User     @relation("RoomBanTarget", fields: [userId], references: [id], onDelete: Cascade)
+  bannedBy    User     @relation("RoomBanIssuer", fields: [bannedById], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
+  @@index([roomId, createdAt])
+  @@index([userId])
+}
+
+model RoomInvitation {
+  id            String   @id @default(cuid())
+  roomId         String
+  invitedUserId  String
+  invitedById    String
+  message        String?
+  createdAt      DateTime @default(now())
+  room           Room      @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  invitedUser    User      @relation("RoomInvitationTarget", fields: [invitedUserId], references: [id], onDelete: Cascade)
+  invitedBy      User      @relation("RoomInvitationIssuer", fields: [invitedById], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, invitedUserId])
+  @@index([invitedUserId, createdAt])
+  @@index([roomId, createdAt])
 }
 
 model RoomMember {
@@ -88,4 +137,93 @@ model Message {
 
   @@index([roomId, createdAt])
   @@index([authorId])
+}
+
+model FriendRequest {
+  id          String   @id @default(cuid())
+  senderId    String
+  receiverId  String
+  message     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  sender      User     @relation("FriendRequestSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver    User     @relation("FriendRequestReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@unique([senderId, receiverId])
+  @@index([receiverId, createdAt])
+  @@index([senderId, createdAt])
+}
+
+model Friendship {
+  id         String   @id @default(cuid())
+  lowUserId  String
+  highUserId String
+  createdAt  DateTime @default(now())
+  lowUser    User     @relation("FriendshipLowUser", fields: [lowUserId], references: [id], onDelete: Cascade)
+  highUser   User     @relation("FriendshipHighUser", fields: [highUserId], references: [id], onDelete: Cascade)
+
+  @@unique([lowUserId, highUserId])
+  @@index([lowUserId])
+  @@index([highUserId])
+}
+
+model DirectChat {
+  id         String          @id @default(cuid())
+  lowUserId  String
+  highUserId String
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  lowUser    User            @relation("DirectChatLowUser", fields: [lowUserId], references: [id], onDelete: Cascade)
+  highUser   User            @relation("DirectChatHighUser", fields: [highUserId], references: [id], onDelete: Cascade)
+  messages   DirectMessage[]
+  reads      DirectChatRead[]
+
+  @@unique([lowUserId, highUserId])
+  @@index([lowUserId, updatedAt])
+  @@index([highUserId, updatedAt])
+}
+
+model DirectMessage {
+  id          String     @id @default(cuid())
+  directChatId String
+  authorId    String
+  text        String
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  directChat  DirectChat @relation(fields: [directChatId], references: [id], onDelete: Cascade)
+  author      User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([directChatId, createdAt])
+  @@index([authorId])
+}
+
+model UserPresence {
+  userId       String   @id
+  lastSeenAt   DateTime @default(now())
+  lastActiveAt DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model RoomRead {
+  id         String   @id @default(cuid())
+  userId     String
+  roomId     String
+  lastReadAt DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  room       Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roomId])
+  @@index([roomId])
+}
+
+model DirectChatRead {
+  id           String     @id @default(cuid())
+  userId       String
+  directChatId String
+  lastReadAt   DateTime   @default(now())
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  directChat   DirectChat @relation(fields: [directChatId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, directChatId])
+  @@index([directChatId])
 }

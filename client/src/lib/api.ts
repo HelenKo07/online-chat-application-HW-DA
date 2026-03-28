@@ -1,4 +1,13 @@
-import { AuthUser, CreateRoomState, Room, RoomMessage } from '../types/api';
+import {
+  AuthUser,
+  CreateRoomState,
+  DirectChatSummary,
+  DirectMessage,
+  FriendRequest,
+  FriendState,
+  Room,
+  RoomMessage,
+} from '../types/api';
 
 const API_BASE = '/api';
 
@@ -32,6 +41,11 @@ async function apiRequest<T>(path: string, init?: RequestInit) {
 
 export const api = {
   me: async () => apiRequest<{ user: AuthUser }>('/auth/me'),
+  heartbeat: async (payload: { isActive: boolean }) =>
+    apiRequest<{ status: 'ok'; recordedAt: string }>('/presence/heartbeat', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
   login: async (payload: { email: string; password: string }) =>
     apiRequest<{ user: AuthUser }>('/auth/login', {
       method: 'POST',
@@ -71,5 +85,30 @@ export const api = {
   leaveRoom: async (roomId: string) =>
     apiRequest<{ success: true; roomId: string }>(`/rooms/${roomId}/leave`, {
       method: 'POST',
+    }),
+  getFriends: async () => apiRequest<FriendState>('/friends'),
+  sendFriendRequest: async (payload: { username: string; message?: string }) =>
+    apiRequest<{ request: FriendRequest }>('/friends/requests', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  acceptFriendRequest: async (requestId: string) =>
+    apiRequest<{ success: true; friend: { id: string; username: string } }>(
+      `/friends/requests/${requestId}/accept`,
+      {
+        method: 'POST',
+      },
+    ),
+  declineFriendRequest: async (requestId: string) =>
+    apiRequest<{ success: true }>(`/friends/requests/${requestId}/decline`, {
+      method: 'POST',
+    }),
+  getDirectChats: async () => apiRequest<{ chats: DirectChatSummary[] }>('/direct-chats'),
+  getDirectMessages: async (friendId: string) =>
+    apiRequest<{ messages: DirectMessage[] }>(`/direct-chats/${friendId}/messages`),
+  sendDirectMessage: async (friendId: string, payload: { text: string }) =>
+    apiRequest<{ message: DirectMessage }>(`/direct-chats/${friendId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
     }),
 };

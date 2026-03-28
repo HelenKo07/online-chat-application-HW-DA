@@ -10,6 +10,7 @@ export type RoomMember = {
   username: string;
   role: 'OWNER' | 'ADMIN' | 'MEMBER';
   joinedAt: string;
+  presence: 'online' | 'afk' | 'offline';
 };
 
 export type Room = {
@@ -24,6 +25,7 @@ export type Room = {
   membersCount: number;
   isMember: boolean;
   currentUserRole: 'OWNER' | 'ADMIN' | 'MEMBER' | null;
+  unreadCount: number;
   members: RoomMember[];
 };
 
@@ -37,6 +39,52 @@ export type RoomMessage = {
     id: string;
     username: string;
   };
+};
+
+export type FriendUser = {
+  id: string;
+  username: string;
+  presence?: 'online' | 'afk' | 'offline';
+};
+
+export type Friend = FriendUser & {
+  since: string;
+  presence: 'online' | 'afk' | 'offline';
+};
+
+export type FriendRequest = {
+  id: string;
+  message: string | null;
+  createdAt: string;
+  user: FriendUser;
+};
+
+export type FriendState = {
+  friends: Friend[];
+  incomingRequests: FriendRequest[];
+  outgoingRequests: FriendRequest[];
+};
+
+export type DirectChatSummary = {
+  id: string;
+  friend: FriendUser;
+  updatedAt: string;
+  unreadCount: number;
+  lastMessage: {
+    id: string;
+    text: string;
+    createdAt: string;
+    author: FriendUser;
+  } | null;
+};
+
+export type DirectMessage = {
+  id: string;
+  text: string;
+  createdAt: string;
+  updatedAt: string;
+  isOwn: boolean;
+  author: FriendUser;
 };
 
 export type AuthMode = 'login' | 'register';

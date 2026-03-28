@@ -18,11 +18,14 @@ export function MemberPanel({ room }: MemberPanelProps) {
             <article key={member.id} className="member-card">
               <div>
                 <strong>{member.username}</strong>
-                <small>{member.role.toLowerCase()}</small>
+                <small>{member.role.toLowerCase()} · {member.presence}</small>
               </div>
-              <span className={`role-badge role-badge--${member.role.toLowerCase()}`}>
-                {member.role.toLowerCase()}
-              </span>
+              <div className="member-card__meta">
+                <span className={`presence-dot presence-dot--${member.presence}`} />
+                <span className={`role-badge role-badge--${member.role.toLowerCase()}`}>
+                  {member.role.toLowerCase()}
+                </span>
+              </div>
             </article>
           ))}
         </div>

@@ -1,7 +1,8 @@
 # Online Chat Application HW
 
-Stages 1-4 establish the technical foundation for a classic web chat application,
-including authentication, public room management, and persistent room messages.
+Stages 1-7 establish the technical foundation for a classic web chat application,
+including authentication, public room management, persistent room messages,
+friends, direct messaging, presence tracking, unread indicators, and room moderation.
 
 ## Stack
 
@@ -63,7 +64,12 @@ This repository currently includes:
 - NestJS API with auth endpoints: `/api/auth/register`, `/api/auth/login`, `/api/auth/logout`, `/api/auth/me`
 - room endpoints: `/api/rooms`, `/api/rooms/:roomId`, `/api/rooms/:roomId/join`, `/api/rooms/:roomId/leave`
 - room message endpoints: `/api/rooms/:roomId/messages`
-- Prisma schema for `User`, `Session`, `Room`, `RoomMember`, and `Message`
+- friend endpoints: `/api/friends`, `/api/friends/requests`, `/api/friends/requests/:requestId/accept`
+- direct chat endpoints: `/api/direct-chats`, `/api/direct-chats/:friendId/messages`
+- presence endpoint: `/api/presence/heartbeat`
+- unread counters for rooms and direct chats
+- room moderation endpoints for owner/admin actions, bans, and private invitations
+- Prisma schema for `User`, `Session`, `Room`, `RoomMember`, `RoomBan`, `RoomInvitation`, `Message`, `FriendRequest`, `Friendship`, `DirectChat`, `DirectMessage`, `UserPresence`, `RoomRead`, and `DirectChatRead`
 - PostgreSQL container wired into Docker Compose
 
 ## Auth flow implemented in stage 2
@@ -90,8 +96,37 @@ This repository currently includes:
 - send messages from the room composer
 - block message access for non-members
 
+## Friends and direct messages implemented in stage 5
+
+- send friend requests by username
+- accept or decline incoming requests
+- list established friendships
+- open direct chats between friends only
+- persist direct messages in PostgreSQL
+
+## Presence and unread indicators implemented in stage 6
+
+- track `online`, `afk`, and `offline` status through authenticated heartbeat updates
+- surface presence in friend lists and room member lists
+- persist read markers for rooms and direct chats
+- show unread counters for room lists and direct chat lists
+- clear unread counters when the user opens the corresponding conversation
+
+## Moderation and private invitations implemented in stage 7
+
+- owner-only room deletion
+- owner can promote members to admins
+- owner/admin can demote admins (owner role is immutable)
+- owner/admin can remove members (treated as room ban)
+- owner/admin can ban and unban users
+- admins can view room ban list including who issued each ban
+- private room invitations by username
+- invited users can list, accept, or decline invitations
+- joining private rooms requires invitation, and banned users cannot join
+- room message deletion by author or room admin/owner
+
 ## Next implementation steps
 
-- persistent messages
-- friendships and direct messages
-- realtime presence and unread indicators
+- realtime transport with Socket.IO
+- richer message features like replies, editing, and attachments
+- user-to-user bans, active sessions screen, and account deletion flows
