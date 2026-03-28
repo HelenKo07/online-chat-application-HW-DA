@@ -39,6 +39,7 @@ model User {
   presence              UserPresence?
   roomReads             RoomRead[]
   directChatReads       DirectChatRead[]
+  roomAttachments       RoomAttachment[]
   roomBansReceived      RoomBan[]        @relation("RoomBanTarget")
   roomBansIssued        RoomBan[]        @relation("RoomBanIssuer")
   roomInvitationsReceived RoomInvitation[] @relation("RoomInvitationTarget")
@@ -71,6 +72,7 @@ model Room {
   updatedAt     DateTime       @updatedAt
   memberships   RoomMember[]
   messages      Message[]
+  attachments   RoomAttachment[]
   reads         RoomRead[]
   bans          RoomBan[]
   invitations   RoomInvitation[]
@@ -137,6 +139,23 @@ model Message {
 
   @@index([roomId, createdAt])
   @@index([authorId])
+}
+
+model RoomAttachment {
+  id            String   @id @default(cuid())
+  roomId         String
+  uploadedById   String
+  originalName   String
+  mimeType       String
+  sizeBytes      Int
+  storagePath    String
+  comment        String?
+  createdAt      DateTime @default(now())
+  room           Room      @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  uploadedBy     User      @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+
+  @@index([roomId, createdAt])
+  @@index([uploadedById])
 }
 
 model FriendRequest {

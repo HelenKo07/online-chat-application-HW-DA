@@ -1,8 +1,9 @@
 # Online Chat Application HW
 
-Stages 1-7 establish the technical foundation for a classic web chat application,
+Stages 1-8 establish the technical foundation for a classic web chat application,
 including authentication, public room management, persistent room messages,
-friends, direct messaging, presence tracking, unread indicators, and room moderation.
+friends, direct messaging, presence tracking, unread indicators, room moderation,
+and room attachments stored on the local filesystem.
 
 ## Stack
 
@@ -69,7 +70,8 @@ This repository currently includes:
 - presence endpoint: `/api/presence/heartbeat`
 - unread counters for rooms and direct chats
 - room moderation endpoints for owner/admin actions, bans, and private invitations
-- Prisma schema for `User`, `Session`, `Room`, `RoomMember`, `RoomBan`, `RoomInvitation`, `Message`, `FriendRequest`, `Friendship`, `DirectChat`, `DirectMessage`, `UserPresence`, `RoomRead`, and `DirectChatRead`
+- room attachment endpoints for upload, list, and download
+- Prisma schema for `User`, `Session`, `Room`, `RoomMember`, `RoomBan`, `RoomInvitation`, `RoomAttachment`, `Message`, `FriendRequest`, `Friendship`, `DirectChat`, `DirectMessage`, `UserPresence`, `RoomRead`, and `DirectChatRead`
 - PostgreSQL container wired into Docker Compose
 
 ## Auth flow implemented in stage 2
@@ -125,8 +127,17 @@ This repository currently includes:
 - joining private rooms requires invitation, and banned users cannot join
 - room message deletion by author or room admin/owner
 
+## Files and images implemented in stage 8
+
+- upload files and images in room chats
+- download attachments by current room members only
+- preserve original file names and optional comments
+- enforce limits: files up to 20 MB and images up to 3 MB
+- store files on local server filesystem (`/app/uploads` in Docker)
+- persist metadata in PostgreSQL through `RoomAttachment`
+
 ## Next implementation steps
 
 - realtime transport with Socket.IO
-- richer message features like replies, editing, and attachments
+- richer message features like replies and editing
 - user-to-user bans, active sessions screen, and account deletion flows

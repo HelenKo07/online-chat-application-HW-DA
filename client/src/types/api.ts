@@ -29,6 +29,37 @@ export type Room = {
   members: RoomMember[];
 };
 
+export type RoomBan = {
+  id: string;
+  roomId: string;
+  reason: string | null;
+  createdAt: string;
+  user: {
+    id: string;
+    username: string;
+  };
+  bannedBy: {
+    id: string;
+    username: string;
+  };
+};
+
+export type RoomInvitation = {
+  id: string;
+  room: {
+    id: string;
+    name: string;
+    description: string;
+    visibility: 'PUBLIC' | 'PRIVATE';
+  };
+  invitedBy: {
+    id: string;
+    username: string;
+  };
+  message: string | null;
+  createdAt: string;
+};
+
 export type RoomMessage = {
   id: string;
   text: string;
@@ -36,6 +67,20 @@ export type RoomMessage = {
   updatedAt: string;
   isOwn: boolean;
   author: {
+    id: string;
+    username: string;
+  };
+};
+
+export type RoomAttachment = {
+  id: string;
+  roomId: string;
+  originalName: string;
+  mimeType: string;
+  sizeBytes: number;
+  comment: string | null;
+  createdAt: string;
+  uploadedBy: {
     id: string;
     username: string;
   };

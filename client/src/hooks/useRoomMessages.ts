@@ -10,6 +10,7 @@ export function useRoomMessages(
   const [messages, setMessages] = useState<RoomMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -54,11 +55,32 @@ export function useRoomMessages(
     }
   };
 
+  const deleteMessage = async (messageId: string) => {
+    if (!roomId) {
+      return;
+    }
+
+    setIsDeleting(true);
+    setError(null);
+
+    try {
+      await api.deleteRoomMessage(roomId, messageId);
+      setMessages((current) => current.filter((message) => message.id !== messageId));
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : 'Failed to delete message');
+      throw caughtError;
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return {
     messages,
     isLoading,
     isSending,
+    isDeleting,
     error,
     sendMessage,
+    deleteMessage,
   };
 }

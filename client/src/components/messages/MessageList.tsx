@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { ConfirmModal } from '../common/ConfirmModal';
 import { RoomMessage } from '../../types/api';
 
 type MessageListProps = {
@@ -5,6 +7,9 @@ type MessageListProps = {
   isLoading: boolean;
   roomName: string | null;
   isMember: boolean;
+  canModerate: boolean;
+  isDeleting: boolean;
+  onDeleteMessage: (messageId: string) => Promise<void>;
 };
 
 export function MessageList({
@@ -12,7 +17,15 @@ export function MessageList({
   isLoading,
   roomName,
   isMember,
+  canModerate,
+  isDeleting,
+  onDeleteMessage,
 }: MessageListProps) {
+  const [pendingDeleteMessage, setPendingDeleteMessage] = useState<{
+    id: string;
+    author: string;
+  } | null>(null);
+
   if (!roomName) {
     return (
       <section className="message-panel message-panel--empty">
@@ -58,13 +71,52 @@ export function MessageList({
             >
               <div className="message__meta">
                 <strong>{message.author.username}</strong>
-                <time>{new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time>
+                <div className="message__meta-actions">
+                  <time>
+                    {new Date(message.createdAt).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </time>
+                  {message.isOwn || canModerate ? (
+                    <button
+                      className="button button--ghost"
+                      type="button"
+                      onClick={() =>
+                        setPendingDeleteMessage({
+                          id: message.id,
+                          author: message.author.username,
+                        })
+                      }
+                      disabled={isDeleting}
+                    >
+                      Delete
+                    </button>
+                  ) : null}
+                </div>
               </div>
               <p>{message.text}</p>
             </article>
           ))
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={Boolean(pendingDeleteMessage)}
+        title={pendingDeleteMessage ? `Delete message by ${pendingDeleteMessage.author}?` : 'Delete message?'}
+        description="This message will be permanently removed from room history."
+        confirmLabel="Delete message"
+        isSubmitting={isDeleting}
+        onCancel={() => setPendingDeleteMessage(null)}
+        onConfirm={async () => {
+          if (!pendingDeleteMessage) {
+            return;
+          }
+
+          await onDeleteMessage(pendingDeleteMessage.id);
+          setPendingDeleteMessage(null);
+        }}
+      />
     </section>
   );
 }

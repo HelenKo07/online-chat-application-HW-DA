@@ -1,3 +1,5 @@
+import { AttachmentList } from './components/attachments/AttachmentList';
+import { AttachmentUploader } from './components/attachments/AttachmentUploader';
 import { AuthScreen } from './components/auth/AuthScreen';
 import { RoomStage } from './components/chat/RoomStage';
 import { MemberPanel } from './components/chat/MemberPanel';
@@ -10,17 +12,35 @@ import { MessageList } from './components/messages/MessageList';
 import { useDirectChats } from './hooks/useDirectChats';
 import { useFriends } from './hooks/useFriends';
 import { usePresenceHeartbeat } from './hooks/usePresenceHeartbeat';
+import { useRoomAttachments } from './hooks/useRoomAttachments';
+import { useRoomInvitations } from './hooks/useRoomInvitations';
 import { CreateRoomForm } from './components/rooms/CreateRoomForm';
+import { InviteToRoomModal } from './components/rooms/InviteToRoomModal';
+import { MyInvitationsPanel } from './components/rooms/MyInvitationsPanel';
 import { RoomList } from './components/rooms/RoomList';
+import { useRoomModeration } from './hooks/useRoomModeration';
 import { useRoomMessages } from './hooks/useRoomMessages';
 import { useRooms } from './hooks/useRooms';
 import { useSession } from './hooks/useSession';
+import { useState } from 'react';
 
 export default function App() {
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const session = useSession();
   const rooms = useRooms(Boolean(session.user));
   const friends = useFriends(Boolean(session.user));
   const directChats = useDirectChats(Boolean(session.user), friends.friends);
+  const roomInvitations = useRoomInvitations(Boolean(session.user), rooms.refreshRooms);
+  const roomAttachments = useRoomAttachments(
+    rooms.selectedRoom?.id ?? null,
+    Boolean(session.user && rooms.selectedRoom?.isMember),
+  );
+  const roomModeration = useRoomModeration({
+    room: rooms.selectedRoom,
+    enabled: Boolean(session.user),
+    refreshRooms: rooms.refreshRooms,
+    selectRoom: rooms.setSelectedRoomId,
+  });
   usePresenceHeartbeat(Boolean(session.user));
   const roomMessages = useRoomMessages(
     rooms.selectedRoom?.id ?? null,
@@ -75,6 +95,13 @@ export default function App() {
             selectedRoomId={rooms.selectedRoomId}
             onSelect={rooms.setSelectedRoomId}
           />
+          <MyInvitationsPanel
+            invitations={roomInvitations.invitations}
+            isLoading={roomInvitations.isLoading}
+            isMutating={roomInvitations.isMutating}
+            onAccept={roomInvitations.acceptInvitation}
+            onDecline={roomInvitations.declineInvitation}
+          />
           <FriendRequestForm
             onSubmit={friends.sendRequest}
             isSubmitting={friends.isMutating}
@@ -90,6 +117,15 @@ export default function App() {
           {roomMessages.error ? (
             <p className="form-error workspace__error">{roomMessages.error}</p>
           ) : null}
+          {roomModeration.error ? (
+            <p className="form-error workspace__error">{roomModeration.error}</p>
+          ) : null}
+          {roomInvitations.error ? (
+            <p className="form-error workspace__error">{roomInvitations.error}</p>
+          ) : null}
+          {roomAttachments.error ? (
+            <p className="form-error workspace__error">{roomAttachments.error}</p>
+          ) : null}
           {rooms.isLoading ? (
             <section className="room-stage room-stage--empty">
               <p className="eyebrow">Rooms</p>
@@ -102,17 +138,35 @@ export default function App() {
                 isMutating={rooms.isMutating}
                 onJoin={rooms.joinRoom}
                 onLeave={rooms.leaveRoom}
+                onDeleteRoom={async () => {
+                  await roomModeration.deleteRoom();
+                }}
+                onOpenInviteModal={() => setIsInviteModalOpen(true)}
               />
               <MessageList
                 messages={roomMessages.messages}
                 isLoading={roomMessages.isLoading}
                 roomName={rooms.selectedRoom?.name ?? null}
                 isMember={Boolean(rooms.selectedRoom?.isMember)}
+                canModerate={Boolean(roomModeration.canModerate)}
+                isDeleting={roomMessages.isDeleting}
+                onDeleteMessage={roomMessages.deleteMessage}
               />
               <MessageComposer
                 canSend={Boolean(rooms.selectedRoom?.isMember)}
                 isSending={roomMessages.isSending}
                 onSend={roomMessages.sendMessage}
+              />
+              <AttachmentUploader
+                canUpload={Boolean(rooms.selectedRoom?.isMember)}
+                isUploading={roomAttachments.isUploading}
+                onUpload={roomAttachments.uploadAttachment}
+              />
+              <AttachmentList
+                roomId={rooms.selectedRoom?.id ?? null}
+                attachments={roomAttachments.attachments}
+                isLoading={roomAttachments.isLoading}
+                canView={Boolean(rooms.selectedRoom?.isMember)}
               />
               <FriendsPanel
                 friends={friends.friends}
@@ -138,8 +192,31 @@ export default function App() {
           )}
         </main>
 
-        <MemberPanel room={rooms.selectedRoom} />
+        <MemberPanel
+          room={rooms.selectedRoom}
+          currentUserId={session.user.id}
+          currentUserRole={rooms.selectedRoom?.currentUserRole ?? null}
+          bans={roomModeration.bans}
+          canModerate={roomModeration.canModerate}
+          isMutating={roomModeration.isMutating}
+          isLoadingBans={roomModeration.isLoadingBans}
+          onPromoteAdmin={roomModeration.promoteAdmin}
+          onDemoteAdmin={roomModeration.demoteAdmin}
+          onRemoveMember={roomModeration.removeMember}
+          onBanUser={(userId) => roomModeration.banUser(userId)}
+          onUnbanUser={roomModeration.unbanUser}
+        />
       </div>
+
+      {rooms.selectedRoom && rooms.selectedRoom.visibility === 'PRIVATE' ? (
+        <InviteToRoomModal
+          roomName={rooms.selectedRoom.name}
+          isOpen={isInviteModalOpen}
+          isSubmitting={roomModeration.isMutating}
+          onClose={() => setIsInviteModalOpen(false)}
+          onSubmit={roomModeration.inviteToPrivateRoom}
+        />
+      ) : null}
     </div>
   );
 }

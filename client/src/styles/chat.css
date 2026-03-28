@@ -36,7 +36,9 @@
 }
 
 .message-panel,
-.composer-card {
+.composer-card,
+.attachment-uploader,
+.attachment-panel {
   padding: 1rem;
   border-radius: 1.5rem;
   background: rgba(255, 255, 255, 0.56);
@@ -78,6 +80,12 @@
   margin-bottom: 0.45rem;
 }
 
+.message__meta-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
 .message__meta time {
   color: var(--muted);
   font-size: 0.85rem;
@@ -86,6 +94,37 @@
 .composer-card {
   display: grid;
   gap: 1rem;
+}
+
+.attachment-uploader {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.attachment-uploader__actions {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.attachment-list {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+}
+
+.attachment-card {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.9rem 1rem;
+  border-radius: 1.2rem;
+  background: var(--surface-strong);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.attachment-card__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
 }
 
 .composer-card__actions {
@@ -172,20 +211,35 @@
 }
 
 .member-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+  display: grid;
+  gap: 0.75rem;
   padding: 0.95rem 1rem;
   border-radius: 1.2rem;
   background: var(--surface-strong);
   border: 1px solid rgba(148, 163, 184, 0.2);
 }
 
+.member-card__main {
+  display: grid;
+  gap: 0.2rem;
+}
+
 .member-card__meta {
   display: flex;
   align-items: center;
   gap: 0.55rem;
+  justify-content: flex-start;
+}
+
+.member-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.bans-panel {
+  display: grid;
+  gap: 0.75rem;
 }
 
 .member-card small,
@@ -254,9 +308,23 @@
     justify-content: space-between;
   }
 
+  .attachment-uploader__actions {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+
   .direct-layout {
     grid-template-columns: minmax(14rem, 18rem) minmax(0, 1fr);
     align-items: start;
+  }
+
+  .member-card {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+
+  .member-card__actions {
+    grid-column: 1 / -1;
   }
 }
 

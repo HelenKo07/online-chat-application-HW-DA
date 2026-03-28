@@ -5,6 +5,9 @@ import {
   DirectMessage,
   FriendRequest,
   FriendState,
+  RoomBan,
+  RoomAttachment,
+  RoomInvitation,
   Room,
   RoomMessage,
 } from '../types/api';
@@ -40,6 +43,8 @@ async function apiRequest<T>(path: string, init?: RequestInit) {
 }
 
 export const api = {
+  getRoomAttachmentDownloadUrl: (roomId: string, attachmentId: string) =>
+    `${API_BASE}/rooms/${roomId}/attachments/${attachmentId}/download`,
   me: async () => apiRequest<{ user: AuthUser }>('/auth/me'),
   heartbeat: async (payload: { isActive: boolean }) =>
     apiRequest<{ status: 'ok'; recordedAt: string }>('/presence/heartbeat', {
@@ -78,12 +83,96 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
+  deleteRoomMessage: async (roomId: string, messageId: string) =>
+    apiRequest<{ success: true; roomId: string; messageId: string }>(
+      `/rooms/${roomId}/messages/${messageId}`,
+      {
+        method: 'DELETE',
+      },
+    ),
+  getRoomAttachments: async (roomId: string) =>
+    apiRequest<{ attachments: RoomAttachment[] }>(`/rooms/${roomId}/attachments`),
+  uploadRoomAttachment: async (
+    roomId: string,
+    payload: { file: File; comment?: string },
+  ) => {
+    const formData = new FormData();
+    formData.append('file', payload.file);
+    if (payload.comment?.trim()) {
+      formData.append('comment', payload.comment.trim());
+    }
+
+    const response = await fetch(`${API_BASE}/rooms/${roomId}/attachments`, {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+    });
+
+    return readJson<{ attachment: RoomAttachment }>(response);
+  },
   joinRoom: async (roomId: string) =>
     apiRequest<{ room: Room }>(`/rooms/${roomId}/join`, {
       method: 'POST',
     }),
   leaveRoom: async (roomId: string) =>
     apiRequest<{ success: true; roomId: string }>(`/rooms/${roomId}/leave`, {
+      method: 'POST',
+    }),
+  deleteRoom: async (roomId: string) =>
+    apiRequest<{ success: true; roomId: string }>(`/rooms/${roomId}`, {
+      method: 'DELETE',
+    }),
+  promoteAdmin: async (roomId: string, targetUserId: string) =>
+    apiRequest<{ success: true; roomId: string; userId: string; role: 'ADMIN' }>(
+      `/rooms/${roomId}/admins/${targetUserId}/promote`,
+      {
+        method: 'POST',
+      },
+    ),
+  demoteAdmin: async (roomId: string, targetUserId: string) =>
+    apiRequest<{ success: true; roomId: string; userId: string; role: 'MEMBER' }>(
+      `/rooms/${roomId}/admins/${targetUserId}/demote`,
+      {
+        method: 'POST',
+      },
+    ),
+  removeMember: async (roomId: string, targetUserId: string) =>
+    apiRequest<{ success: true; roomId: string; userId: string; banned: true }>(
+      `/rooms/${roomId}/members/${targetUserId}/remove`,
+      {
+        method: 'POST',
+      },
+    ),
+  getRoomBans: async (roomId: string) =>
+    apiRequest<{ bans: RoomBan[] }>(`/rooms/${roomId}/bans`),
+  banRoomUser: async (roomId: string, payload: { userId: string; reason?: string }) =>
+    apiRequest<{ success: true; roomId: string; userId: string; banned: true }>(
+      `/rooms/${roomId}/bans`,
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      },
+    ),
+  unbanRoomUser: async (roomId: string, targetUserId: string) =>
+    apiRequest<{ success: true; roomId: string; userId: string; banned: false }>(
+      `/rooms/${roomId}/bans/${targetUserId}`,
+      {
+        method: 'DELETE',
+      },
+    ),
+  inviteToRoom: async (roomId: string, payload: { username: string; message?: string }) =>
+    apiRequest<{ invitation: RoomInvitation }>(`/rooms/${roomId}/invitations`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  getMyRoomInvitations: async () =>
+    apiRequest<{ invitations: RoomInvitation[] }>('/rooms/invitations/me'),
+  acceptRoomInvitation: async (roomId: string) =>
+    apiRequest<{ room: Room }>(`/rooms/${roomId}/invitations/accept`, {
+      method: 'POST',
+    }),
+  declineRoomInvitation: async (roomId: string) =>
+    apiRequest<{ success: true; roomId: string }>(`/rooms/${roomId}/invitations/decline`, {
       method: 'POST',
     }),
   getFriends: async () => apiRequest<FriendState>('/friends'),

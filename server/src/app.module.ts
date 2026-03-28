@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AttachmentsModule } from './attachments/attachments.module';
 import { AuthModule } from './auth/auth.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -14,6 +15,7 @@ import { UsersModule } from './users/users.module';
   imports: [
     DatabaseModule,
     UsersModule,
+    AttachmentsModule,
     AuthModule,
     RoomsModule,
     MessagesModule,

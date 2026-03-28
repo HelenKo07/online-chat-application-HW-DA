@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { ConfirmModal } from '../common/ConfirmModal';
 import { Room } from '../../types/api';
 
 type RoomStageProps = {
@@ -5,9 +7,20 @@ type RoomStageProps = {
   isMutating: boolean;
   onJoin: (roomId: string) => Promise<void>;
   onLeave: (roomId: string) => Promise<void>;
+  onDeleteRoom: () => Promise<void>;
+  onOpenInviteModal: () => void;
 };
 
-export function RoomStage({ room, isMutating, onJoin, onLeave }: RoomStageProps) {
+export function RoomStage({
+  room,
+  isMutating,
+  onJoin,
+  onLeave,
+  onDeleteRoom,
+  onOpenInviteModal,
+}: RoomStageProps) {
+  const [isDeleteRoomConfirmOpen, setIsDeleteRoomConfirmOpen] = useState(false);
+
   if (!room) {
     return (
       <section className="room-stage room-stage--empty">
@@ -22,6 +35,9 @@ export function RoomStage({ room, isMutating, onJoin, onLeave }: RoomStageProps)
   }
 
   const canLeave = room.isMember && room.currentUserRole !== 'OWNER';
+  const isOwner = room.currentUserRole === 'OWNER';
+  const canInviteToPrivate = room.isMember && room.visibility === 'PRIVATE';
+  const canModerate = room.currentUserRole === 'OWNER' || room.currentUserRole === 'ADMIN';
 
   return (
     <section className="room-stage">
@@ -34,14 +50,38 @@ export function RoomStage({ room, isMutating, onJoin, onLeave }: RoomStageProps)
 
         <div className="room-stage__actions">
           {room.isMember ? (
-            <button
-              className="button"
-              type="button"
-              onClick={() => void onLeave(room.id)}
-              disabled={isMutating || !canLeave}
-            >
-              {room.currentUserRole === 'OWNER' ? 'Owner cannot leave' : 'Leave room'}
-            </button>
+            <>
+              {canInviteToPrivate ? (
+                <button
+                  className="button"
+                  type="button"
+                  onClick={onOpenInviteModal}
+                  disabled={isMutating}
+                >
+                  Invite user
+                </button>
+              ) : null}
+
+              <button
+                className="button"
+                type="button"
+                onClick={() => void onLeave(room.id)}
+                disabled={isMutating || !canLeave}
+              >
+                {isOwner ? 'Owner cannot leave' : 'Leave room'}
+              </button>
+
+              {isOwner ? (
+                <button
+                  className="button button--danger"
+                  type="button"
+                  onClick={() => setIsDeleteRoomConfirmOpen(true)}
+                  disabled={isMutating}
+                >
+                  Delete room
+                </button>
+              ) : null}
+            </>
           ) : (
             <button
               className="button button--primary"
@@ -66,14 +106,28 @@ export function RoomStage({ room, isMutating, onJoin, onLeave }: RoomStageProps)
         </article>
 
         <article className="info-card">
-          <p className="eyebrow">Next chat phase</p>
+          <p className="eyebrow">Moderation</p>
           <ul className="info-list">
-            <li>Connect messages to selected room</li>
-            <li>Persist room history in PostgreSQL</li>
-            <li>Add invite flows for private rooms</li>
+            <li>Owner/admin can remove and ban members</li>
+            <li>Owner can promote and demote admins</li>
+            <li>Private room invitations are available from this stage</li>
+            <li>Your moderation access: {canModerate ? 'enabled' : 'read-only'}</li>
           </ul>
         </article>
       </div>
+
+      <ConfirmModal
+        isOpen={isDeleteRoomConfirmOpen}
+        title={`Delete ${room.name}?`}
+        description="This action permanently removes the room and its message history."
+        confirmLabel="Delete room"
+        isSubmitting={isMutating}
+        onCancel={() => setIsDeleteRoomConfirmOpen(false)}
+        onConfirm={async () => {
+          await onDeleteRoom();
+          setIsDeleteRoomConfirmOpen(false);
+        }}
+      />
     </section>
   );
 }
