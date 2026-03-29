@@ -187,6 +187,67 @@ export class DirectChatsService {
     };
   }
 
+  async editMessage(
+    user: SessionUser,
+    friendId: string,
+    messageId: string,
+    input: { text: string },
+  ) {
+    const blockState = await this.friendsService.getBlockState(user.id, friendId);
+    if (blockState.blocked) {
+      throw new ForbiddenException('Direct chat is frozen due to user ban');
+    }
+
+    const chat = await this.getOrCreateChat(user.id, friendId, false);
+    if (!chat) {
+      throw new NotFoundException('Direct chat not found');
+    }
+
+    const message = await this.database.directMessage.findFirst({
+      where: {
+        id: messageId,
+        directChatId: chat.id,
+      },
+      include: {
+        author: { select: { id: true, username: true } },
+      },
+    });
+
+    if (!message) {
+      throw new NotFoundException('Message not found');
+    }
+
+    if (message.authorId !== user.id) {
+      throw new ForbiddenException('You can only edit your own messages');
+    }
+
+    const updated = await this.database.directMessage.update({
+      where: {
+        id: message.id,
+      },
+      data: {
+        text: input.text.trim(),
+      },
+      include: {
+        author: { select: { id: true, username: true } },
+      },
+    });
+
+    await this.database.directChat.update({
+      where: { id: chat.id },
+      data: { updatedAt: new Date() },
+    });
+
+    return {
+      id: updated.id,
+      text: updated.text,
+      createdAt: updated.createdAt,
+      updatedAt: updated.updatedAt,
+      author: updated.author,
+      isOwn: true,
+    };
+  }
+
   private async getOrCreateChat(userId: string, friendId: string, createIfMissing: boolean) {
     const friend = await this.database.user.findUnique({
       where: { id: friendId },

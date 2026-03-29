@@ -1,8 +1,9 @@
-import { Body, Controller, Get, Param, Post, Req } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Req } from '@nestjs/common';
 import { Request } from 'express';
 import { SessionAuthService } from '../auth/session-auth.service';
 import { CreateDirectMessageDto } from './dto/create-direct-message.dto';
 import { DirectChatsService } from './direct-chats.service';
+import { EditDirectMessageDto } from './dto/edit-direct-message.dto';
 
 @Controller('direct-chats')
 export class DirectChatsController {
@@ -37,6 +38,19 @@ export class DirectChatsController {
     const user = await this.sessionAuthService.requireUser(request);
     return {
       message: await this.directChatsService.sendMessage(user, friendId, body),
+    };
+  }
+
+  @Patch(':friendId/messages/:messageId')
+  async editMessage(
+    @Param('friendId') friendId: string,
+    @Param('messageId') messageId: string,
+    @Body() body: EditDirectMessageDto,
+    @Req() request: Request,
+  ) {
+    const user = await this.sessionAuthService.requireUser(request);
+    return {
+      message: await this.directChatsService.editMessage(user, friendId, messageId, body),
     };
   }
 }

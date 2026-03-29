@@ -1,7 +1,8 @@
-import { Body, Controller, Delete, Get, Param, Post, Query, Req } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req } from '@nestjs/common';
 import { Request } from 'express';
 import { SessionAuthService } from '../auth/session-auth.service';
 import { CreateMessageDto } from './dto/create-message.dto';
+import { EditMessageDto } from './dto/edit-message.dto';
 import { ListRoomMessagesDto } from './dto/list-room-messages.dto';
 import { MessagesService } from './messages.service';
 
@@ -44,5 +45,18 @@ export class MessagesController {
   ) {
     const user = await this.sessionAuthService.requireUser(request);
     return this.messagesService.deleteRoomMessage(roomId, messageId, user.id);
+  }
+
+  @Patch(':messageId')
+  async editMessage(
+    @Param('roomId') roomId: string,
+    @Param('messageId') messageId: string,
+    @Body() body: EditMessageDto,
+    @Req() request: Request,
+  ) {
+    const user = await this.sessionAuthService.requireUser(request);
+    return {
+      message: await this.messagesService.editRoomMessage(roomId, messageId, user.id, body),
+    };
   }
 }

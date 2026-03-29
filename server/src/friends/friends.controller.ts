@@ -65,4 +65,13 @@ export class FriendsController {
     const user = await this.sessionAuthService.requireUser(request);
     return this.friendsService.unblockUser(user, targetUserId);
   }
+
+  @Delete(':targetUserId')
+  async removeFriend(
+    @Param('targetUserId') targetUserId: string,
+    @Req() request: Request,
+  ) {
+    const user = await this.sessionAuthService.requireUser(request);
+    return this.friendsService.removeFriend(user, targetUserId);
+  }
 }

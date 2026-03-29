@@ -12,6 +12,7 @@ import { UsersService } from '../users/users.service';
 const SESSION_COOKIE_NAME = 'chat_session';
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 30;
 const PASSWORD_SALT_BYTES = 16;
+const DELETED_USER_USERNAME = '__deleted_user__';
 
 type SessionMeta = {
   userAgent?: string;
@@ -207,10 +208,57 @@ export class AuthService {
       throw new UnauthorizedException('Current password is incorrect');
     }
 
-    await this.database.user.delete({
-      where: {
-        id: userId,
-      },
+    const deletedUser = await this.ensureDeletedUserAccount();
+
+    if (deletedUser.id === userId) {
+      throw new BadRequestException('System account cannot be deleted');
+    }
+
+    await this.database.$transaction(async (tx) => {
+      await tx.room.deleteMany({
+        where: {
+          ownerId: userId,
+        },
+      });
+
+      await tx.message.updateMany({
+        where: {
+          authorId: userId,
+        },
+        data: {
+          authorId: deletedUser.id,
+        },
+      });
+
+      await tx.roomAttachment.updateMany({
+        where: {
+          uploadedById: userId,
+        },
+        data: {
+          uploadedById: deletedUser.id,
+        },
+      });
+
+      await tx.directMessage.updateMany({
+        where: {
+          authorId: userId,
+        },
+        data: {
+          authorId: deletedUser.id,
+        },
+      });
+
+      await tx.session.deleteMany({
+        where: {
+          userId,
+        },
+      });
+
+      await tx.user.delete({
+        where: {
+          id: userId,
+        },
+      });
     });
 
     return { success: true };
@@ -284,6 +332,29 @@ export class AuthService {
 
   private hashSessionToken(token: string) {
     return createHash('sha256').update(token).digest('hex');
+  }
+
+  private async ensureDeletedUserAccount() {
+    const existing = await this.usersService.findByUsername(DELETED_USER_USERNAME);
+    if (existing) {
+      return existing;
+    }
+
+    const randomSuffix = randomBytes(12).toString('hex');
+
+    try {
+      return await this.usersService.createUser({
+        email: `deleted-user-${randomSuffix}@system.local`,
+        username: DELETED_USER_USERNAME,
+        passwordHash: this.hashPassword(randomBytes(32).toString('hex')),
+      });
+    } catch {
+      const created = await this.usersService.findByUsername(DELETED_USER_USERNAME);
+      if (!created) {
+        throw new BadRequestException('Failed to prepare deleted user account');
+      }
+      return created;
+    }
   }
 
   private toSafeUser(user: SessionUser) {

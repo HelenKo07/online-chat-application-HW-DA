@@ -167,6 +167,55 @@ export class MessagesService {
     };
   }
 
+  async editRoomMessage(
+    roomId: string,
+    messageId: string,
+    userId: string,
+    input: { text: string },
+  ) {
+    const message = await this.database.message.findFirst({
+      where: {
+        id: messageId,
+        roomId,
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            username: true,
+          },
+        },
+      },
+    });
+
+    if (!message) {
+      throw new NotFoundException('Message not found');
+    }
+
+    if (message.authorId !== userId) {
+      throw new ForbiddenException('You can only edit your own messages');
+    }
+
+    const updated = await this.database.message.update({
+      where: {
+        id: message.id,
+      },
+      data: {
+        text: input.text.trim(),
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            username: true,
+          },
+        },
+      },
+    });
+
+    return this.toClientMessage(updated, userId);
+  }
+
   private async ensureRoomMember(roomId: string, userId: string) {
     const membership = await this.database.roomMember.findFirst({
       where: {

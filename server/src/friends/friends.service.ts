@@ -297,6 +297,38 @@ export class FriendsService {
     return { success: true };
   }
 
+  async removeFriend(user: SessionUser, targetUserId: string) {
+    if (targetUserId === user.id) {
+      throw new BadRequestException('You cannot remove yourself from friends');
+    }
+
+    const target = await this.usersService.findById(targetUserId);
+    if (!target) {
+      throw new NotFoundException('User not found');
+    }
+
+    const pair = normalizeUserPair(user.id, targetUserId);
+
+    await this.database.$transaction([
+      this.database.friendship.deleteMany({
+        where: {
+          lowUserId: pair.lowUserId,
+          highUserId: pair.highUserId,
+        },
+      }),
+      this.database.friendRequest.deleteMany({
+        where: {
+          OR: [
+            { senderId: user.id, receiverId: targetUserId },
+            { senderId: targetUserId, receiverId: user.id },
+          ],
+        },
+      }),
+    ]);
+
+    return { success: true };
+  }
+
   async getBlockState(actorUserId: string, targetUserId: string) {
     const [blockedByActor, blockedByTarget] = await Promise.all([
       this.database.userBlock.findUnique({
