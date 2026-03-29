@@ -112,6 +112,12 @@ export type Friend = FriendUser & {
   presence: 'online' | 'afk' | 'offline';
 };
 
+export type BlockedUser = {
+  id: string;
+  username: string;
+  blockedAt: string;
+};
+
 export type FriendRequest = {
   id: string;
   message: string | null;
@@ -123,6 +129,7 @@ export type FriendState = {
   friends: Friend[];
   incomingRequests: FriendRequest[];
   outgoingRequests: FriendRequest[];
+  blockedUsers: BlockedUser[];
 };
 
 export type DirectChatSummary = {
@@ -130,6 +137,8 @@ export type DirectChatSummary = {
   friend: FriendUser;
   updatedAt: string;
   unreadCount: number;
+  isFrozen: boolean;
+  freezeReason: 'blocked_by_you' | 'blocked_by_other' | null;
   lastMessage: {
     id: string;
     text: string;
@@ -145,6 +154,12 @@ export type DirectMessage = {
   updatedAt: string;
   isOwn: boolean;
   author: FriendUser;
+};
+
+export type DirectMessagesPayload = {
+  messages: DirectMessage[];
+  isFrozen: boolean;
+  freezeReason: 'blocked_by_you' | 'blocked_by_other' | null;
 };
 
 export type AuthMode = 'login' | 'register';

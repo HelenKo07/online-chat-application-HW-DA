@@ -1,12 +1,15 @@
-import { Friend, FriendRequest } from '../../types/api';
+import { BlockedUser, Friend, FriendRequest } from '../../types/api';
 
 type FriendsPanelProps = {
   friends: Friend[];
   incomingRequests: FriendRequest[];
   outgoingRequests: FriendRequest[];
+  blockedUsers: BlockedUser[];
   isMutating: boolean;
   onAccept: (requestId: string) => Promise<void>;
   onDecline: (requestId: string) => Promise<void>;
+  onBlockUser: (userId: string) => Promise<void>;
+  onUnblockUser: (userId: string) => Promise<void>;
   onSelectFriend: (friendId: string) => void;
   selectedFriendId: string | null;
 };
@@ -15,9 +18,12 @@ export function FriendsPanel({
   friends,
   incomingRequests,
   outgoingRequests,
+  blockedUsers,
   isMutating,
   onAccept,
   onDecline,
+  onBlockUser,
+  onUnblockUser,
   onSelectFriend,
   selectedFriendId,
 }: FriendsPanelProps) {
@@ -30,15 +36,27 @@ export function FriendsPanel({
 
       <div className="friends-list">
         {friends.map((friend) => (
-          <button
+          <article
             key={friend.id}
-            type="button"
             className={`friend-card${selectedFriendId === friend.id ? ' friend-card--active' : ''}`}
-            onClick={() => onSelectFriend(friend.id)}
           >
-            <strong>{friend.username}</strong>
-            <small>{friend.presence} · friend since {new Date(friend.since).toLocaleDateString()}</small>
-          </button>
+            <button
+              type="button"
+              className="friend-card__select"
+              onClick={() => onSelectFriend(friend.id)}
+            >
+              <strong>{friend.username}</strong>
+              <small>{friend.presence} · friend since {new Date(friend.since).toLocaleDateString()}</small>
+            </button>
+            <button
+              className="button button--danger"
+              type="button"
+              disabled={isMutating}
+              onClick={() => void onBlockUser(friend.id)}
+            >
+              Block
+            </button>
+          </article>
         ))}
       </div>
 
@@ -83,6 +101,30 @@ export function FriendsPanel({
             <article key={request.id} className="request-card">
               <strong>{request.user.username}</strong>
               <small>{request.message || 'No message'}</small>
+            </article>
+          ))
+        )}
+      </div>
+
+      <div className="request-group">
+        <p className="eyebrow">Blocked users</p>
+        {blockedUsers.length === 0 ? (
+          <p className="muted-copy">No blocked users.</p>
+        ) : (
+          blockedUsers.map((blocked) => (
+            <article key={blocked.id} className="request-card">
+              <strong>{blocked.username}</strong>
+              <small>blocked {new Date(blocked.blockedAt).toLocaleDateString()}</small>
+              <div className="request-card__actions">
+                <button
+                  className="button"
+                  type="button"
+                  disabled={isMutating}
+                  onClick={() => void onUnblockUser(blocked.id)}
+                >
+                  Unblock
+                </button>
+              </div>
             </article>
           ))
         )}

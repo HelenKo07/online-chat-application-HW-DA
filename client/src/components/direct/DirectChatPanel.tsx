@@ -8,6 +8,8 @@ type DirectChatPanelProps = {
   isLoadingChats: boolean;
   isLoadingMessages: boolean;
   isSending: boolean;
+  isFrozen: boolean;
+  freezeReason: 'blocked_by_you' | 'blocked_by_other' | null;
   onSelectFriend: (friendId: string) => void;
   onSendMessage: (text: string) => Promise<void>;
 };
@@ -19,6 +21,8 @@ export function DirectChatPanel({
   isLoadingChats,
   isLoadingMessages,
   isSending,
+  isFrozen,
+  freezeReason,
   onSelectFriend,
   onSendMessage,
 }: DirectChatPanelProps) {
@@ -56,6 +60,13 @@ export function DirectChatPanel({
           <div className="direct-thread__header">
             <p className="eyebrow">Direct thread</p>
             <h3>{selectedFriend ? selectedFriend.username : 'Choose a friend'}</h3>
+            {isFrozen ? (
+              <p className="muted-copy">
+                {freezeReason === 'blocked_by_you'
+                  ? 'Conversation is frozen because you blocked this user.'
+                  : 'Conversation is frozen because this user blocked you.'}
+              </p>
+            ) : null}
           </div>
 
           <div className="message-list">
@@ -94,7 +105,7 @@ export function DirectChatPanel({
           </div>
 
           <MessageComposer
-            canSend={Boolean(selectedFriend)}
+            canSend={Boolean(selectedFriend) && !isFrozen}
             isSending={isSending}
             onSend={onSendMessage}
           />

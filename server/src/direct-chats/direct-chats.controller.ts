@@ -25,9 +25,7 @@ export class DirectChatsController {
     @Req() request: Request,
   ) {
     const user = await this.sessionAuthService.requireUser(request);
-    return {
-      messages: await this.directChatsService.listMessages(user, friendId),
-    };
+    return this.directChatsService.listMessages(user, friendId);
   }
 
   @Post(':friendId/messages')

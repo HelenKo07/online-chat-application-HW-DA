@@ -178,10 +178,22 @@
 .request-card {
   width: 100%;
   padding: 0.9rem 1rem;
-  text-align: left;
   border-radius: 1.15rem;
   background: var(--surface-strong);
   border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.friend-card {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.friend-card__select {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  padding: 0;
+  border: 0;
 }
 
 .friend-card--active {

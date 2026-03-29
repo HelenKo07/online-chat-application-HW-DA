@@ -193,9 +193,12 @@ export default function App() {
                 friends={friends.friends}
                 incomingRequests={friends.incomingRequests}
                 outgoingRequests={friends.outgoingRequests}
+                blockedUsers={friends.blockedUsers}
                 isMutating={friends.isMutating}
                 onAccept={friends.acceptRequest}
                 onDecline={friends.declineRequest}
+                onBlockUser={friends.blockUser}
+                onUnblockUser={friends.unblockUser}
                 onSelectFriend={directChats.setSelectedFriendId}
                 selectedFriendId={directChats.selectedFriendId}
               />
@@ -206,6 +209,8 @@ export default function App() {
                 isLoadingChats={directChats.isLoadingChats}
                 isLoadingMessages={directChats.isLoadingMessages}
                 isSending={directChats.isSending}
+                isFrozen={directChats.isFrozen}
+                freezeReason={directChats.freezeReason}
                 onSelectFriend={directChats.setSelectedFriendId}
                 onSendMessage={directChats.sendMessage}
               />

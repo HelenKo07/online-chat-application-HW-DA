@@ -6,6 +6,8 @@ export function useDirectChats(enabled: boolean, friends: Friend[]) {
   const [chats, setChats] = useState<DirectChatSummary[]>([]);
   const [selectedFriendId, setSelectedFriendId] = useState<string | null>(null);
   const [messages, setMessages] = useState<DirectMessage[]>([]);
+  const [isFrozen, setIsFrozen] = useState(false);
+  const [freezeReason, setFreezeReason] = useState<'blocked_by_you' | 'blocked_by_other' | null>(null);
   const [isLoadingChats, setIsLoadingChats] = useState(false);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isSending, setIsSending] = useState(false);
@@ -52,6 +54,8 @@ export function useDirectChats(enabled: boolean, friends: Friend[]) {
   useEffect(() => {
     if (!selectedFriendId || !enabled) {
       setMessages([]);
+      setIsFrozen(false);
+      setFreezeReason(null);
       return;
     }
 
@@ -61,9 +65,13 @@ export function useDirectChats(enabled: boolean, friends: Friend[]) {
       try {
         const response = await api.getDirectMessages(selectedFriendId);
         setMessages(response.messages);
+        setIsFrozen(response.isFrozen);
+        setFreezeReason(response.freezeReason);
         await refreshChats();
       } catch (caughtError) {
         setMessages([]);
+        setIsFrozen(false);
+        setFreezeReason(null);
         setError(caughtError instanceof Error ? caughtError.message : 'Failed to load direct messages');
       } finally {
         setIsLoadingMessages(false);
@@ -102,6 +110,8 @@ export function useDirectChats(enabled: boolean, friends: Friend[]) {
     setSelectedFriendId,
     selectedFriend,
     messages,
+    isFrozen,
+    freezeReason,
     isLoadingChats,
     isLoadingMessages,
     isSending,

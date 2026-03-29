@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Req } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Req } from '@nestjs/common';
 import { Request } from 'express';
 import { SessionAuthService } from '../auth/session-auth.service';
 import { CreateFriendRequestDto } from './dto/create-friend-request.dto';
@@ -46,5 +46,23 @@ export class FriendsController {
   ) {
     const user = await this.sessionAuthService.requireUser(request);
     return this.friendsService.declineFriendRequest(user, requestId);
+  }
+
+  @Post('blocks/:targetUserId')
+  async blockUser(
+    @Param('targetUserId') targetUserId: string,
+    @Req() request: Request,
+  ) {
+    const user = await this.sessionAuthService.requireUser(request);
+    return this.friendsService.blockUser(user, targetUserId);
+  }
+
+  @Delete('blocks/:targetUserId')
+  async unblockUser(
+    @Param('targetUserId') targetUserId: string,
+    @Req() request: Request,
+  ) {
+    const user = await this.sessionAuthService.requireUser(request);
+    return this.friendsService.unblockUser(user, targetUserId);
   }
 }

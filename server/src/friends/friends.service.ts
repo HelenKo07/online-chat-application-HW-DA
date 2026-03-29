@@ -19,7 +19,7 @@ export class FriendsService {
   ) {}
 
   async getFriendState(user: SessionUser) {
-    const [incomingRequests, outgoingRequests, friendships] = await Promise.all([
+    const [incomingRequests, outgoingRequests, friendships, blockedUsers] = await Promise.all([
       this.database.friendRequest.findMany({
         where: { receiverId: user.id },
         include: {
@@ -43,6 +43,17 @@ export class FriendsService {
           highUser: { select: { id: true, username: true } },
         },
         orderBy: { createdAt: 'asc' },
+      }),
+      this.database.userBlock.findMany({
+        where: {
+          blockerId: user.id,
+        },
+        include: {
+          blocked: {
+            select: { id: true, username: true },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
       }),
     ]);
 
@@ -75,6 +86,11 @@ export class FriendsService {
           presence: statuses.get(friend.id) ?? 'offline',
         };
       }),
+      blockedUsers: blockedUsers.map((entry) => ({
+        id: entry.blocked.id,
+        username: entry.blocked.username,
+        blockedAt: entry.createdAt,
+      })),
     };
   }
 
@@ -90,6 +106,11 @@ export class FriendsService {
 
     if (target.id === user.id) {
       throw new BadRequestException('You cannot send a friend request to yourself');
+    }
+
+    const blocked = await this.getBlockState(user.id, target.id);
+    if (blocked.blockedByActor || blocked.blockedByTarget) {
+      throw new ForbiddenException('Friend request is blocked by user ban');
     }
 
     const friendship = await this.findFriendship(user.id, target.id);
@@ -151,6 +172,11 @@ export class FriendsService {
       throw new ForbiddenException('You cannot accept this request');
     }
 
+    const blocked = await this.getBlockState(request.receiverId, request.senderId);
+    if (blocked.blockedByActor || blocked.blockedByTarget) {
+      throw new ForbiddenException('Friendship is blocked');
+    }
+
     const pair = normalizeUserPair(request.senderId, request.receiverId);
 
     await this.database.$transaction([
@@ -201,6 +227,11 @@ export class FriendsService {
   }
 
   async assertFriends(userId: string, otherUserId: string) {
+    const blocked = await this.getBlockState(userId, otherUserId);
+    if (blocked.blockedByActor || blocked.blockedByTarget) {
+      throw new ForbiddenException('Direct messages are blocked');
+    }
+
     const friendship = await this.findFriendship(userId, otherUserId);
 
     if (!friendship) {
@@ -208,6 +239,89 @@ export class FriendsService {
     }
 
     return friendship;
+  }
+
+  async blockUser(user: SessionUser, targetUserId: string) {
+    if (targetUserId === user.id) {
+      throw new BadRequestException('You cannot block yourself');
+    }
+
+    const target = await this.usersService.findById(targetUserId);
+    if (!target) {
+      throw new NotFoundException('User not found');
+    }
+
+    const pair = normalizeUserPair(user.id, targetUserId);
+
+    await this.database.$transaction([
+      this.database.userBlock.upsert({
+        where: {
+          blockerId_blockedId: {
+            blockerId: user.id,
+            blockedId: targetUserId,
+          },
+        },
+        update: {},
+        create: {
+          blockerId: user.id,
+          blockedId: targetUserId,
+        },
+      }),
+      this.database.friendship.deleteMany({
+        where: {
+          lowUserId: pair.lowUserId,
+          highUserId: pair.highUserId,
+        },
+      }),
+      this.database.friendRequest.deleteMany({
+        where: {
+          OR: [
+            { senderId: user.id, receiverId: targetUserId },
+            { senderId: targetUserId, receiverId: user.id },
+          ],
+        },
+      }),
+    ]);
+
+    return { success: true };
+  }
+
+  async unblockUser(user: SessionUser, targetUserId: string) {
+    await this.database.userBlock.deleteMany({
+      where: {
+        blockerId: user.id,
+        blockedId: targetUserId,
+      },
+    });
+
+    return { success: true };
+  }
+
+  async getBlockState(actorUserId: string, targetUserId: string) {
+    const [blockedByActor, blockedByTarget] = await Promise.all([
+      this.database.userBlock.findUnique({
+        where: {
+          blockerId_blockedId: {
+            blockerId: actorUserId,
+            blockedId: targetUserId,
+          },
+        },
+      }),
+      this.database.userBlock.findUnique({
+        where: {
+          blockerId_blockedId: {
+            blockerId: targetUserId,
+            blockedId: actorUserId,
+          },
+        },
+      }),
+    ]);
+
+    return {
+      blockedByActor: Boolean(blockedByActor),
+      blockedByTarget: Boolean(blockedByTarget),
+      blocked: Boolean(blockedByActor || blockedByTarget),
+    };
   }
 
   private findFriendship(userIdA: string, userIdB: string) {

@@ -3,6 +3,7 @@ import {
   AuthUser,
   CreateRoomState,
   DirectChatSummary,
+  DirectMessagesPayload,
   DirectMessage,
   FriendRequest,
   FriendState,
@@ -226,9 +227,17 @@ export const api = {
     apiRequest<{ success: true }>(`/friends/requests/${requestId}/decline`, {
       method: 'POST',
     }),
+  blockUser: async (targetUserId: string) =>
+    apiRequest<{ success: true }>(`/friends/blocks/${targetUserId}`, {
+      method: 'POST',
+    }),
+  unblockUser: async (targetUserId: string) =>
+    apiRequest<{ success: true }>(`/friends/blocks/${targetUserId}`, {
+      method: 'DELETE',
+    }),
   getDirectChats: async () => apiRequest<{ chats: DirectChatSummary[] }>('/direct-chats'),
   getDirectMessages: async (friendId: string) =>
-    apiRequest<{ messages: DirectMessage[] }>(`/direct-chats/${friendId}/messages`),
+    apiRequest<DirectMessagesPayload>(`/direct-chats/${friendId}/messages`),
   sendDirectMessage: async (friendId: string, payload: { text: string }) =>
     apiRequest<{ message: DirectMessage }>(`/direct-chats/${friendId}/messages`, {
       method: 'POST',

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { SessionUser } from '../common/session-user.type';
 import { normalizeUserPair } from '../common/user-pair';
 import { DatabaseService } from '../database/database.service';
@@ -40,6 +40,7 @@ export class DirectChatsService {
     return Promise.all(chats.map(async (chat) => {
       const friend = chat.lowUserId === user.id ? chat.highUser : chat.lowUser;
       const lastMessage = chat.messages[0] ?? null;
+      const blockState = await this.friendsService.getBlockState(user.id, friend.id);
       const read = await this.database.directChatRead.findUnique({
         where: {
           userId_directChatId: {
@@ -68,6 +69,12 @@ export class DirectChatsService {
         },
         updatedAt: chat.updatedAt,
         unreadCount,
+        isFrozen: blockState.blocked,
+        freezeReason: blockState.blocked
+          ? blockState.blockedByActor
+            ? 'blocked_by_you'
+            : 'blocked_by_other'
+          : null,
         lastMessage: lastMessage
           ? {
               id: lastMessage.id,
@@ -82,9 +89,18 @@ export class DirectChatsService {
 
   async listMessages(user: SessionUser, friendId: string) {
     const chat = await this.getOrCreateChat(user.id, friendId, false);
+    const blockState = await this.friendsService.getBlockState(user.id, friendId);
 
     if (!chat) {
-      return [];
+      return {
+        messages: [],
+        isFrozen: blockState.blocked,
+        freezeReason: blockState.blocked
+          ? blockState.blockedByActor
+            ? 'blocked_by_you'
+            : 'blocked_by_other'
+          : null,
+      };
     }
 
     const messages = await this.database.directMessage.findMany({
@@ -115,17 +131,30 @@ export class DirectChatsService {
       },
     });
 
-    return messages.map((message) => ({
-      id: message.id,
-      text: message.text,
-      createdAt: message.createdAt,
-      updatedAt: message.updatedAt,
-      author: message.author,
-      isOwn: message.author.id === user.id,
-    }));
+    return {
+      messages: messages.map((message) => ({
+        id: message.id,
+        text: message.text,
+        createdAt: message.createdAt,
+        updatedAt: message.updatedAt,
+        author: message.author,
+        isOwn: message.author.id === user.id,
+      })),
+      isFrozen: blockState.blocked,
+      freezeReason: blockState.blocked
+        ? blockState.blockedByActor
+          ? 'blocked_by_you'
+          : 'blocked_by_other'
+        : null,
+    };
   }
 
   async sendMessage(user: SessionUser, friendId: string, input: { text: string }) {
+    const blockState = await this.friendsService.getBlockState(user.id, friendId);
+    if (blockState.blocked) {
+      throw new ForbiddenException('Direct chat is frozen due to user ban');
+    }
+
     const chat = await this.getOrCreateChat(user.id, friendId, true);
 
     if (!chat) {
@@ -168,8 +197,6 @@ export class DirectChatsService {
       throw new NotFoundException('Friend not found');
     }
 
-    await this.friendsService.assertFriends(userId, friendId);
-
     const pair = normalizeUserPair(userId, friendId);
 
     const existing = await this.database.directChat.findUnique({
@@ -178,9 +205,15 @@ export class DirectChatsService {
       },
     });
 
-    if (existing || !createIfMissing) {
+    if (existing) {
       return existing;
     }
+
+    if (!createIfMissing) {
+      return null;
+    }
+
+    await this.friendsService.assertFriends(userId, friendId);
 
     return this.database.directChat.create({
       data: pair,

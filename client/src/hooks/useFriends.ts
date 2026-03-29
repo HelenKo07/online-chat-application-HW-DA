@@ -6,6 +6,7 @@ const emptyState: FriendState = {
   friends: [],
   incomingRequests: [],
   outgoingRequests: [],
+  blockedUsers: [],
 };
 
 export function useFriends(enabled: boolean) {
@@ -94,6 +95,36 @@ export function useFriends(enabled: boolean) {
     }
   };
 
+  const blockUser = async (userId: string) => {
+    setIsMutating(true);
+    setError(null);
+
+    try {
+      await api.blockUser(userId);
+      await refresh();
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : 'Failed to block user');
+      throw caughtError;
+    } finally {
+      setIsMutating(false);
+    }
+  };
+
+  const unblockUser = async (userId: string) => {
+    setIsMutating(true);
+    setError(null);
+
+    try {
+      await api.unblockUser(userId);
+      await refresh();
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : 'Failed to unblock user');
+      throw caughtError;
+    } finally {
+      setIsMutating(false);
+    }
+  };
+
   return {
     ...state,
     isLoading,
@@ -103,5 +134,7 @@ export function useFriends(enabled: boolean) {
     sendRequest,
     acceptRequest,
     declineRequest,
+    blockUser,
+    unblockUser,
   };
 }
