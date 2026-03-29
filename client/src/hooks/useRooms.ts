@@ -9,30 +9,38 @@ export function useRooms(enabled: boolean) {
   const [isMutating, setIsMutating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const loadRooms = async (preferredRoomId?: string) => {
+  const loadRooms = async (options?: { preferredRoomId?: string; silent?: boolean }) => {
     if (!enabled) {
       return;
     }
 
-    setIsLoading(true);
-    setError(null);
+    const preferredRoomId = options?.preferredRoomId;
+    const silent = options?.silent ?? false;
+
+    if (!silent) {
+      setIsLoading(true);
+      setError(null);
+    }
 
     try {
       const response = await api.getRooms();
       setRooms(response.rooms);
 
-      const nextSelected =
-        preferredRoomId ??
-        selectedRoomId ??
-        response.rooms.find((room) => room.isMember)?.id ??
-        response.rooms[0]?.id ??
-        null;
-
-      setSelectedRoomId(nextSelected);
+      setSelectedRoomId((currentSelectedRoomId) => {
+        const nextSelected =
+          preferredRoomId ??
+          currentSelectedRoomId ??
+          response.rooms.find((room) => room.isMember)?.id ??
+          response.rooms[0]?.id ??
+          null;
+        return nextSelected;
+      });
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : 'Failed to load rooms');
     } finally {
-      setIsLoading(false);
+      if (!silent) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -46,11 +54,11 @@ export function useRooms(enabled: boolean) {
     }
 
     const intervalId = window.setInterval(() => {
-      void loadRooms();
+      void loadRooms({ silent: true });
     }, 15000);
 
     return () => window.clearInterval(intervalId);
-  }, [enabled, selectedRoomId]);
+  }, [enabled]);
 
   const createRoom = async (payload: CreateRoomState) => {
     setIsMutating(true);
@@ -58,7 +66,7 @@ export function useRooms(enabled: boolean) {
 
     try {
       const response = await api.createRoom(payload);
-      await loadRooms(response.room.id);
+      await loadRooms({ preferredRoomId: response.room.id });
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : 'Failed to create room');
       throw caughtError;
@@ -73,7 +81,7 @@ export function useRooms(enabled: boolean) {
 
     try {
       await api.joinRoom(roomId);
-      await loadRooms(roomId);
+      await loadRooms({ preferredRoomId: roomId });
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : 'Failed to join room');
       throw caughtError;
@@ -100,6 +108,10 @@ export function useRooms(enabled: boolean) {
   const selectedRoom: Room | null =
     rooms.find((room) => room.id === selectedRoomId) ?? null;
 
+  const refreshRooms = async (preferredRoomId?: string) => {
+    await loadRooms({ preferredRoomId });
+  };
+
   return {
     rooms,
     selectedRoom,
@@ -111,6 +123,6 @@ export function useRooms(enabled: boolean) {
     createRoom,
     joinRoom,
     leaveRoom,
-    refreshRooms: loadRooms,
+    refreshRooms,
   };
 }

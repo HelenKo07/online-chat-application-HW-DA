@@ -118,6 +118,11 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
+  editRoomMessage: async (roomId: string, messageId: string, payload: { text: string }) =>
+    apiRequest<{ message: RoomMessage }>(`/rooms/${roomId}/messages/${messageId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
   deleteRoomMessage: async (roomId: string, messageId: string) =>
     apiRequest<{ success: true; roomId: string; messageId: string }>(
       `/rooms/${roomId}/messages/${messageId}`,
@@ -235,6 +240,10 @@ export const api = {
     apiRequest<{ success: true }>(`/friends/blocks/${targetUserId}`, {
       method: 'DELETE',
     }),
+  removeFriend: async (targetUserId: string) =>
+    apiRequest<{ success: true }>(`/friends/${targetUserId}`, {
+      method: 'DELETE',
+    }),
   getDirectChats: async () => apiRequest<{ chats: DirectChatSummary[] }>('/direct-chats'),
   getDirectMessages: async (friendId: string) =>
     apiRequest<DirectMessagesPayload>(`/direct-chats/${friendId}/messages`),
@@ -243,4 +252,16 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
+  editDirectMessage: async (
+    friendId: string,
+    messageId: string,
+    payload: { text: string },
+  ) =>
+    apiRequest<{ message: DirectMessage }>(
+      `/direct-chats/${friendId}/messages/${messageId}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      },
+    ),
 };

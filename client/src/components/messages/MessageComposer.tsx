@@ -43,7 +43,6 @@ export function MessageComposer({
       </label>
 
       <div className="composer-card__actions">
-        <small>Stage 4: room messages persisted in PostgreSQL</small>
         <button
           className="button button--primary"
           type="submit"

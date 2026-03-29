@@ -11,15 +11,20 @@ export function useDirectChats(enabled: boolean, friends: Friend[]) {
   const [isLoadingChats, setIsLoadingChats] = useState(false);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const refreshChats = async () => {
+  const refreshChats = async (options?: { silent?: boolean }) => {
     if (!enabled) {
       return;
     }
 
-    setIsLoadingChats(true);
-    setError(null);
+    const silent = options?.silent ?? false;
+
+    if (!silent) {
+      setIsLoadingChats(true);
+      setError(null);
+    }
 
     try {
       const response = await api.getDirectChats();
@@ -31,7 +36,9 @@ export function useDirectChats(enabled: boolean, friends: Friend[]) {
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : 'Failed to load direct chats');
     } finally {
-      setIsLoadingChats(false);
+      if (!silent) {
+        setIsLoadingChats(false);
+      }
     }
   };
 
@@ -45,7 +52,7 @@ export function useDirectChats(enabled: boolean, friends: Friend[]) {
     }
 
     const intervalId = window.setInterval(() => {
-      void refreshChats();
+      void refreshChats({ silent: true });
     }, 15000);
 
     return () => window.clearInterval(intervalId);
@@ -67,7 +74,7 @@ export function useDirectChats(enabled: boolean, friends: Friend[]) {
         setMessages(response.messages);
         setIsFrozen(response.isFrozen);
         setFreezeReason(response.freezeReason);
-        await refreshChats();
+        await refreshChats({ silent: true });
       } catch (caughtError) {
         setMessages([]);
         setIsFrozen(false);
@@ -90,12 +97,36 @@ export function useDirectChats(enabled: boolean, friends: Friend[]) {
     try {
       const response = await api.sendDirectMessage(selectedFriendId, { text });
       setMessages((current) => [...current, response.message]);
-      await refreshChats();
+      await refreshChats({ silent: true });
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : 'Failed to send direct message');
       throw caughtError;
     } finally {
       setIsSending(false);
+    }
+  };
+
+  const editMessage = async (messageId: string, text: string) => {
+    if (!selectedFriendId) {
+      return;
+    }
+
+    setIsEditing(true);
+    setError(null);
+
+    try {
+      const response = await api.editDirectMessage(selectedFriendId, messageId, { text });
+      setMessages((current) =>
+        current.map((message) =>
+          message.id === messageId ? response.message : message,
+        ),
+      );
+      await refreshChats({ silent: true });
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : 'Failed to edit direct message');
+      throw caughtError;
+    } finally {
+      setIsEditing(false);
     }
   };
 
@@ -115,8 +146,10 @@ export function useDirectChats(enabled: boolean, friends: Friend[]) {
     isLoadingChats,
     isLoadingMessages,
     isSending,
+    isEditing,
     error,
     sendMessage,
+    editMessage,
     refreshChats,
   };
 }

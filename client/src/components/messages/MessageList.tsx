@@ -9,10 +9,12 @@ type MessageListProps = {
   isMember: boolean;
   canModerate: boolean;
   isDeleting: boolean;
+  isEditing: boolean;
   hasMore: boolean;
   isLoadingOlder: boolean;
   onLoadOlder: () => Promise<void>;
   onDeleteMessage: (messageId: string) => Promise<void>;
+  onEditMessage: (messageId: string, text: string) => Promise<void>;
 };
 
 export function MessageList({
@@ -22,15 +24,24 @@ export function MessageList({
   isMember,
   canModerate,
   isDeleting,
+  isEditing,
   hasMore,
   isLoadingOlder,
   onLoadOlder,
   onDeleteMessage,
+  onEditMessage,
 }: MessageListProps) {
   const [pendingDeleteMessage, setPendingDeleteMessage] = useState<{
     id: string;
     author: string;
   } | null>(null);
+  const [editingMessage, setEditingMessage] = useState<{
+    id: string;
+    text: string;
+  } | null>(null);
+
+  const isEdited = (message: RoomMessage) =>
+    new Date(message.updatedAt).getTime() > new Date(message.createdAt).getTime();
 
   if (!roomName) {
     return (
@@ -97,6 +108,22 @@ export function MessageList({
                       minute: '2-digit',
                     })}
                   </time>
+                  {isEdited(message) ? <span className="message__edited">edited</span> : null}
+                  {message.isOwn ? (
+                    <button
+                      className="button button--ghost"
+                      type="button"
+                      onClick={() =>
+                        setEditingMessage({
+                          id: message.id,
+                          text: message.text,
+                        })
+                      }
+                      disabled={isEditing || isDeleting}
+                    >
+                      Edit
+                    </button>
+                  ) : null}
                   {message.isOwn || canModerate ? (
                     <button
                       className="button button--ghost"
@@ -114,7 +141,49 @@ export function MessageList({
                   ) : null}
                 </div>
               </div>
-              <p>{message.text}</p>
+              {editingMessage?.id === message.id ? (
+                <form
+                  className="message__edit-form"
+                  onSubmit={async (event) => {
+                    event.preventDefault();
+                    if (!editingMessage.text.trim()) {
+                      return;
+                    }
+                    await onEditMessage(message.id, editingMessage.text);
+                    setEditingMessage(null);
+                  }}
+                >
+                  <textarea
+                    value={editingMessage.text}
+                    onChange={(event) =>
+                      setEditingMessage((current) =>
+                        current ? { ...current, text: event.target.value } : current,
+                      )
+                    }
+                    maxLength={3072}
+                    rows={3}
+                  />
+                  <div className="request-card__actions">
+                    <button
+                      className="button button--primary"
+                      type="submit"
+                      disabled={isEditing || !editingMessage.text.trim()}
+                    >
+                      {isEditing ? 'Saving...' : 'Save'}
+                    </button>
+                    <button
+                      className="button"
+                      type="button"
+                      onClick={() => setEditingMessage(null)}
+                      disabled={isEditing}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <p>{message.text}</p>
+              )}
             </article>
           ))
         )}

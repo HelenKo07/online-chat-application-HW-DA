@@ -14,6 +14,7 @@ export function useRoomMessages(
   const [isLoadingOlder, setIsLoadingOlder] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -108,6 +109,29 @@ export function useRoomMessages(
     }
   };
 
+  const editMessage = async (messageId: string, text: string) => {
+    if (!roomId) {
+      return;
+    }
+
+    setIsEditing(true);
+    setError(null);
+
+    try {
+      const response = await api.editRoomMessage(roomId, messageId, { text });
+      setMessages((current) =>
+        current.map((message) =>
+          message.id === messageId ? response.message : message,
+        ),
+      );
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : 'Failed to edit message');
+      throw caughtError;
+    } finally {
+      setIsEditing(false);
+    }
+  };
+
   return {
     messages,
     isLoading,
@@ -115,9 +139,11 @@ export function useRoomMessages(
     hasMore,
     isSending,
     isDeleting,
+    isEditing,
     error,
     sendMessage,
     loadOlder,
     deleteMessage,
+    editMessage,
   };
 }

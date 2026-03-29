@@ -1,5 +1,6 @@
 import { DirectChatSummary, Friend, DirectMessage } from '../../types/api';
 import { MessageComposer } from '../messages/MessageComposer';
+import { useState } from 'react';
 
 type DirectChatPanelProps = {
   chats: DirectChatSummary[];
@@ -8,10 +9,12 @@ type DirectChatPanelProps = {
   isLoadingChats: boolean;
   isLoadingMessages: boolean;
   isSending: boolean;
+  isEditing: boolean;
   isFrozen: boolean;
   freezeReason: 'blocked_by_you' | 'blocked_by_other' | null;
   onSelectFriend: (friendId: string) => void;
   onSendMessage: (text: string) => Promise<void>;
+  onEditMessage: (messageId: string, text: string) => Promise<void>;
 };
 
 export function DirectChatPanel({
@@ -21,11 +24,21 @@ export function DirectChatPanel({
   isLoadingChats,
   isLoadingMessages,
   isSending,
+  isEditing,
   isFrozen,
   freezeReason,
   onSelectFriend,
   onSendMessage,
+  onEditMessage,
 }: DirectChatPanelProps) {
+  const [editingMessage, setEditingMessage] = useState<{
+    id: string;
+    text: string;
+  } | null>(null);
+
+  const isEdited = (message: DirectMessage) =>
+    new Date(message.updatedAt).getTime() > new Date(message.createdAt).getTime();
+
   return (
     <section className="panel direct-panel">
       <div className="panel__header">
@@ -88,14 +101,76 @@ export function DirectChatPanel({
                   >
                     <div className="message__meta">
                       <strong>{message.author.username}</strong>
-                      <time>
-                        {new Date(message.createdAt).toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </time>
+                      <div className="message__meta-actions">
+                        <time>
+                          {new Date(message.createdAt).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </time>
+                        {isEdited(message) ? (
+                          <span className="message__edited">edited</span>
+                        ) : null}
+                        {message.isOwn && !isFrozen ? (
+                          <button
+                            className="button button--ghost"
+                            type="button"
+                            onClick={() =>
+                              setEditingMessage({
+                                id: message.id,
+                                text: message.text,
+                              })
+                            }
+                            disabled={isEditing}
+                          >
+                            Edit
+                          </button>
+                        ) : null}
+                      </div>
                     </div>
-                    <p>{message.text}</p>
+                    {editingMessage?.id === message.id ? (
+                      <form
+                        className="message__edit-form"
+                        onSubmit={async (event) => {
+                          event.preventDefault();
+                          if (!editingMessage.text.trim()) {
+                            return;
+                          }
+                          await onEditMessage(message.id, editingMessage.text);
+                          setEditingMessage(null);
+                        }}
+                      >
+                        <textarea
+                          value={editingMessage.text}
+                          onChange={(event) =>
+                            setEditingMessage((current) =>
+                              current ? { ...current, text: event.target.value } : current,
+                            )
+                          }
+                          maxLength={3072}
+                          rows={3}
+                        />
+                        <div className="request-card__actions">
+                          <button
+                            className="button button--primary"
+                            type="submit"
+                            disabled={isEditing || !editingMessage.text.trim()}
+                          >
+                            {isEditing ? 'Saving...' : 'Save'}
+                          </button>
+                          <button
+                            className="button"
+                            type="button"
+                            onClick={() => setEditingMessage(null)}
+                            disabled={isEditing}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    ) : (
+                      <p>{message.text}</p>
+                    )}
                   </article>
                 ))
               )

@@ -15,20 +15,26 @@ export function useFriends(enabled: boolean) {
   const [isMutating, setIsMutating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const refresh = async () => {
+  const refresh = async (options?: { silent?: boolean }) => {
     if (!enabled) {
       return;
     }
 
-    setIsLoading(true);
-    setError(null);
+    const silent = options?.silent ?? false;
+
+    if (!silent) {
+      setIsLoading(true);
+      setError(null);
+    }
 
     try {
       setState(await api.getFriends());
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : 'Failed to load friends');
     } finally {
-      setIsLoading(false);
+      if (!silent) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -42,7 +48,7 @@ export function useFriends(enabled: boolean) {
     }
 
     const intervalId = window.setInterval(() => {
-      void refresh();
+      void refresh({ silent: true });
     }, 15000);
 
     return () => window.clearInterval(intervalId);
@@ -125,6 +131,21 @@ export function useFriends(enabled: boolean) {
     }
   };
 
+  const removeFriend = async (userId: string) => {
+    setIsMutating(true);
+    setError(null);
+
+    try {
+      await api.removeFriend(userId);
+      await refresh();
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : 'Failed to remove friend');
+      throw caughtError;
+    } finally {
+      setIsMutating(false);
+    }
+  };
+
   return {
     ...state,
     isLoading,
@@ -136,5 +157,6 @@ export function useFriends(enabled: boolean) {
     declineRequest,
     blockUser,
     unblockUser,
+    removeFriend,
   };
 }

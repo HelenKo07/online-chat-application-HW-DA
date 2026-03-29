@@ -11,13 +11,16 @@ export function useRoomInvitations(
   const [isMutating, setIsMutating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const loadInvitations = async () => {
+  const loadInvitations = async (options?: { silent?: boolean }) => {
     if (!enabled) {
       setInvitations([]);
       return;
     }
 
-    setIsLoading(true);
+    const silent = options?.silent ?? false;
+    if (!silent) {
+      setIsLoading(true);
+    }
 
     try {
       const response = await api.getMyRoomInvitations();
@@ -25,7 +28,9 @@ export function useRoomInvitations(
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : 'Failed to load invitations');
     } finally {
-      setIsLoading(false);
+      if (!silent) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -39,7 +44,7 @@ export function useRoomInvitations(
     }
 
     const intervalId = window.setInterval(() => {
-      void loadInvitations();
+      void loadInvitations({ silent: true });
     }, 15000);
 
     return () => window.clearInterval(intervalId);

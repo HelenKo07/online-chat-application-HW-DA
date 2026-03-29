@@ -168,10 +168,12 @@ export default function App() {
                 isMember={Boolean(rooms.selectedRoom?.isMember)}
                 canModerate={Boolean(roomModeration.canModerate)}
                 isDeleting={roomMessages.isDeleting}
+                isEditing={roomMessages.isEditing}
                 hasMore={roomMessages.hasMore}
                 isLoadingOlder={roomMessages.isLoadingOlder}
                 onLoadOlder={roomMessages.loadOlder}
                 onDeleteMessage={roomMessages.deleteMessage}
+                onEditMessage={roomMessages.editMessage}
               />
               <MessageComposer
                 canSend={Boolean(rooms.selectedRoom?.isMember)}
@@ -199,6 +201,7 @@ export default function App() {
                 onDecline={friends.declineRequest}
                 onBlockUser={friends.blockUser}
                 onUnblockUser={friends.unblockUser}
+                onRemoveFriend={friends.removeFriend}
                 onSelectFriend={directChats.setSelectedFriendId}
                 selectedFriendId={directChats.selectedFriendId}
               />
@@ -209,10 +212,12 @@ export default function App() {
                 isLoadingChats={directChats.isLoadingChats}
                 isLoadingMessages={directChats.isLoadingMessages}
                 isSending={directChats.isSending}
+                isEditing={directChats.isEditing}
                 isFrozen={directChats.isFrozen}
                 freezeReason={directChats.freezeReason}
                 onSelectFriend={directChats.setSelectedFriendId}
                 onSendMessage={directChats.sendMessage}
+                onEditMessage={directChats.editMessage}
               />
             </div>
           )}

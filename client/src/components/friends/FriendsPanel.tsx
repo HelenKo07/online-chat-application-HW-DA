@@ -10,6 +10,7 @@ type FriendsPanelProps = {
   onDecline: (requestId: string) => Promise<void>;
   onBlockUser: (userId: string) => Promise<void>;
   onUnblockUser: (userId: string) => Promise<void>;
+  onRemoveFriend: (userId: string) => Promise<void>;
   onSelectFriend: (friendId: string) => void;
   selectedFriendId: string | null;
 };
@@ -24,6 +25,7 @@ export function FriendsPanel({
   onDecline,
   onBlockUser,
   onUnblockUser,
+  onRemoveFriend,
   onSelectFriend,
   selectedFriendId,
 }: FriendsPanelProps) {
@@ -48,14 +50,24 @@ export function FriendsPanel({
               <strong>{friend.username}</strong>
               <small>{friend.presence} · friend since {new Date(friend.since).toLocaleDateString()}</small>
             </button>
-            <button
-              className="button button--danger"
-              type="button"
-              disabled={isMutating}
-              onClick={() => void onBlockUser(friend.id)}
-            >
-              Block
-            </button>
+            <div className="request-card__actions">
+              <button
+                className="button"
+                type="button"
+                disabled={isMutating}
+                onClick={() => void onRemoveFriend(friend.id)}
+              >
+                Remove
+              </button>
+              <button
+                className="button button--danger"
+                type="button"
+                disabled={isMutating}
+                onClick={() => void onBlockUser(friend.id)}
+              >
+                Block
+              </button>
+            </div>
           </article>
         ))}
       </div>
