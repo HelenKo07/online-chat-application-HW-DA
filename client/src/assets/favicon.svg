@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- background -->
+  <rect width="64" height="64" rx="16" fill="#F5F3EF"></rect>
+  
+  <!-- chat bubble -->
+  <path d="M20 20h24a10 10 0 0 1 10 10v6a10 10 0 0 1-10 10H32l-10 8v-8h-2a10 10 0 0 1-10-10v-6a10 10 0 0 1 10-10z" fill="#EADFD6"></path>
+  
+  <!-- accent -->
+  <circle cx="42" cy="30" r="4" fill="#E85D04"></circle>
+  
+  <!-- letter -->
+  <text x="32" y="38" text-anchor="middle" font-size="18" fill="#2D2D2D" font-family="Arial, sans-serif" font-weight="600">
+    C
+  </text>
+</svg>

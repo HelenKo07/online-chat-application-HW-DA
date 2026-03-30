@@ -74,6 +74,11 @@ export type RoomMessage = {
   text: string;
   createdAt: string;
   updatedAt: string;
+  replyTo: {
+    id: string;
+    text: string;
+    author: FriendUser;
+  } | null;
   isOwn: boolean;
   author: {
     id: string;
@@ -152,8 +157,24 @@ export type DirectMessage = {
   text: string;
   createdAt: string;
   updatedAt: string;
+  replyTo: {
+    id: string;
+    text: string;
+    author: FriendUser;
+  } | null;
   isOwn: boolean;
   author: FriendUser;
+};
+
+export type DirectAttachment = {
+  id: string;
+  directChatId: string;
+  originalName: string;
+  mimeType: string;
+  sizeBytes: number;
+  comment: string | null;
+  createdAt: string;
+  uploadedBy: FriendUser;
 };
 
 export type DirectMessagesPayload = {

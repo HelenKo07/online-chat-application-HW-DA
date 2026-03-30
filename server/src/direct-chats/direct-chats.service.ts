@@ -109,6 +109,18 @@ export class DirectChatsService {
       },
       include: {
         author: { select: { id: true, username: true } },
+        replyToMessage: {
+          select: {
+            id: true,
+            text: true,
+            author: {
+              select: {
+                id: true,
+                username: true,
+              },
+            },
+          },
+        },
       },
       orderBy: { createdAt: 'asc' },
       take: 100,
@@ -138,6 +150,13 @@ export class DirectChatsService {
         createdAt: message.createdAt,
         updatedAt: message.updatedAt,
         author: message.author,
+        replyTo: message.replyToMessage
+          ? {
+              id: message.replyToMessage.id,
+              text: message.replyToMessage.text,
+              author: message.replyToMessage.author,
+            }
+          : null,
         isOwn: message.author.id === user.id,
       })),
       isFrozen: blockState.blocked,
@@ -149,7 +168,11 @@ export class DirectChatsService {
     };
   }
 
-  async sendMessage(user: SessionUser, friendId: string, input: { text: string }) {
+  async sendMessage(
+    user: SessionUser,
+    friendId: string,
+    input: { text: string; replyToMessageId?: string },
+  ) {
     const blockState = await this.friendsService.getBlockState(user.id, friendId);
     if (blockState.blocked) {
       throw new ForbiddenException('Direct chat is frozen due to user ban');
@@ -161,14 +184,43 @@ export class DirectChatsService {
       throw new NotFoundException('Direct chat not found');
     }
 
+    if (input.replyToMessageId) {
+      const replyTarget = await this.database.directMessage.findFirst({
+        where: {
+          id: input.replyToMessageId,
+          directChatId: chat.id,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      if (!replyTarget) {
+        throw new NotFoundException('Reply target message not found');
+      }
+    }
+
     const message = await this.database.directMessage.create({
       data: {
         directChatId: chat.id,
         authorId: user.id,
         text: input.text.trim(),
+        replyToMessageId: input.replyToMessageId ?? null,
       },
       include: {
         author: { select: { id: true, username: true } },
+        replyToMessage: {
+          select: {
+            id: true,
+            text: true,
+            author: {
+              select: {
+                id: true,
+                username: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -183,6 +235,13 @@ export class DirectChatsService {
       createdAt: message.createdAt,
       updatedAt: message.updatedAt,
       author: message.author,
+      replyTo: message.replyToMessage
+        ? {
+            id: message.replyToMessage.id,
+            text: message.replyToMessage.text,
+            author: message.replyToMessage.author,
+          }
+        : null,
       isOwn: true,
     };
   }
@@ -210,6 +269,18 @@ export class DirectChatsService {
       },
       include: {
         author: { select: { id: true, username: true } },
+        replyToMessage: {
+          select: {
+            id: true,
+            text: true,
+            author: {
+              select: {
+                id: true,
+                username: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -230,6 +301,18 @@ export class DirectChatsService {
       },
       include: {
         author: { select: { id: true, username: true } },
+        replyToMessage: {
+          select: {
+            id: true,
+            text: true,
+            author: {
+              select: {
+                id: true,
+                username: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -244,6 +327,13 @@ export class DirectChatsService {
       createdAt: updated.createdAt,
       updatedAt: updated.updatedAt,
       author: updated.author,
+      replyTo: updated.replyToMessage
+        ? {
+            id: updated.replyToMessage.id,
+            text: updated.replyToMessage.text,
+            author: updated.replyToMessage.author,
+          }
+        : null,
       isOwn: true,
     };
   }

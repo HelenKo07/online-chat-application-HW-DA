@@ -40,6 +40,7 @@ model User {
   roomReads             RoomRead[]
   directChatReads       DirectChatRead[]
   roomAttachments       RoomAttachment[]
+  directAttachments     DirectAttachment[]
   roomBansReceived      RoomBan[]        @relation("RoomBanTarget")
   roomBansIssued        RoomBan[]        @relation("RoomBanIssuer")
   roomInvitationsReceived RoomInvitation[] @relation("RoomInvitationTarget")
@@ -134,13 +135,17 @@ model Message {
   roomId     String
   authorId   String
   text       String
+  replyToMessageId String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   room       Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
   author     User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  replyToMessage Message? @relation("MessageReply", fields: [replyToMessageId], references: [id], onDelete: SetNull)
+  replies       Message[] @relation("MessageReply")
 
   @@index([roomId, createdAt])
   @@index([authorId])
+  @@index([replyToMessageId])
 }
 
 model RoomAttachment {
@@ -210,6 +215,7 @@ model DirectChat {
   lowUser    User            @relation("DirectChatLowUser", fields: [lowUserId], references: [id], onDelete: Cascade)
   highUser   User            @relation("DirectChatHighUser", fields: [highUserId], references: [id], onDelete: Cascade)
   messages   DirectMessage[]
+  attachments DirectAttachment[]
   reads      DirectChatRead[]
 
   @@unique([lowUserId, highUserId])
@@ -222,13 +228,34 @@ model DirectMessage {
   directChatId String
   authorId    String
   text        String
+  replyToMessageId String?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   directChat  DirectChat @relation(fields: [directChatId], references: [id], onDelete: Cascade)
   author      User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  replyToMessage DirectMessage? @relation("DirectMessageReply", fields: [replyToMessageId], references: [id], onDelete: SetNull)
+  replies       DirectMessage[] @relation("DirectMessageReply")
 
   @@index([directChatId, createdAt])
   @@index([authorId])
+  @@index([replyToMessageId])
+}
+
+model DirectAttachment {
+  id            String    @id @default(cuid())
+  directChatId  String
+  uploadedById  String
+  originalName  String
+  mimeType      String
+  sizeBytes     Int
+  storagePath   String
+  comment       String?
+  createdAt     DateTime  @default(now())
+  directChat    DirectChat @relation(fields: [directChatId], references: [id], onDelete: Cascade)
+  uploadedBy    User      @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+
+  @@index([directChatId, createdAt])
+  @@index([uploadedById])
 }
 
 model UserPresence {

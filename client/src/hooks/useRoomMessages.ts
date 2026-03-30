@@ -46,7 +46,7 @@ export function useRoomMessages(
     })();
   }, [roomId, enabled]);
 
-  const sendMessage = async (text: string) => {
+  const sendMessage = async (text: string, replyToMessageId?: string) => {
     if (!roomId) {
       return;
     }
@@ -55,7 +55,7 @@ export function useRoomMessages(
     setError(null);
 
     try {
-      const response = await api.sendRoomMessage(roomId, { text });
+      const response = await api.sendRoomMessage(roomId, { text, replyToMessageId });
       setMessages((current) => [...current, response.message]);
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : 'Failed to send message');

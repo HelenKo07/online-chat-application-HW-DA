@@ -2,6 +2,7 @@ import {
   ActiveSession,
   AuthUser,
   CreateRoomState,
+  DirectAttachment,
   DirectChatSummary,
   DirectMessagesPayload,
   DirectMessage,
@@ -48,6 +49,8 @@ async function apiRequest<T>(path: string, init?: RequestInit) {
 export const api = {
   getRoomAttachmentDownloadUrl: (roomId: string, attachmentId: string) =>
     `${API_BASE}/rooms/${roomId}/attachments/${attachmentId}/download`,
+  getDirectAttachmentDownloadUrl: (friendId: string, attachmentId: string) =>
+    `${API_BASE}/direct-chats/${friendId}/attachments/${attachmentId}/download`,
   me: async () => apiRequest<{ user: AuthUser }>('/auth/me'),
   heartbeat: async (payload: { isActive: boolean; tabId: string }) =>
     apiRequest<{ status: 'ok'; recordedAt: string }>('/presence/heartbeat', {
@@ -113,7 +116,10 @@ export const api = {
       `/rooms/${roomId}/messages${query ? `?${query}` : ''}`,
     );
   },
-  sendRoomMessage: async (roomId: string, payload: { text: string }) =>
+  sendRoomMessage: async (
+    roomId: string,
+    payload: { text: string; replyToMessageId?: string },
+  ) =>
     apiRequest<{ message: RoomMessage }>(`/rooms/${roomId}/messages`, {
       method: 'POST',
       body: JSON.stringify(payload),
@@ -149,6 +155,26 @@ export const api = {
     });
 
     return readJson<{ attachment: RoomAttachment }>(response);
+  },
+  getDirectAttachments: async (friendId: string) =>
+    apiRequest<{ attachments: DirectAttachment[] }>(`/direct-chats/${friendId}/attachments`),
+  uploadDirectAttachment: async (
+    friendId: string,
+    payload: { file: File; comment?: string },
+  ) => {
+    const formData = new FormData();
+    formData.append('file', payload.file);
+    if (payload.comment?.trim()) {
+      formData.append('comment', payload.comment.trim());
+    }
+
+    const response = await fetch(`${API_BASE}/direct-chats/${friendId}/attachments`, {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+    });
+
+    return readJson<{ attachment: DirectAttachment }>(response);
   },
   joinRoom: async (roomId: string) =>
     apiRequest<{ room: Room }>(`/rooms/${roomId}/join`, {
@@ -247,7 +273,10 @@ export const api = {
   getDirectChats: async () => apiRequest<{ chats: DirectChatSummary[] }>('/direct-chats'),
   getDirectMessages: async (friendId: string) =>
     apiRequest<DirectMessagesPayload>(`/direct-chats/${friendId}/messages`),
-  sendDirectMessage: async (friendId: string, payload: { text: string }) =>
+  sendDirectMessage: async (
+    friendId: string,
+    payload: { text: string; replyToMessageId?: string },
+  ) =>
     apiRequest<{ message: DirectMessage }>(`/direct-chats/${friendId}/messages`, {
       method: 'POST',
       body: JSON.stringify(payload),

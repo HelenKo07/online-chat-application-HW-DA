@@ -54,6 +54,18 @@ export class MessagesService {
             username: true,
           },
         },
+        replyToMessage: {
+          select: {
+            id: true,
+            text: true,
+            author: {
+              select: {
+                id: true,
+                username: true,
+              },
+            },
+          },
+        },
       },
       orderBy: {
         createdAt: 'desc',
@@ -94,21 +106,50 @@ export class MessagesService {
   async createRoomMessage(
     roomId: string,
     user: SessionUser,
-    input: { text: string },
+    input: { text: string; replyToMessageId?: string },
   ) {
     await this.ensureRoomMember(roomId, user.id);
+
+    if (input.replyToMessageId) {
+      const replyTarget = await this.database.message.findFirst({
+        where: {
+          id: input.replyToMessageId,
+          roomId,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      if (!replyTarget) {
+        throw new NotFoundException('Reply target message not found');
+      }
+    }
 
     const message = await this.database.message.create({
       data: {
         roomId,
         authorId: user.id,
         text: input.text.trim(),
+        replyToMessageId: input.replyToMessageId ?? null,
       },
       include: {
         author: {
           select: {
             id: true,
             username: true,
+          },
+        },
+        replyToMessage: {
+          select: {
+            id: true,
+            text: true,
+            author: {
+              select: {
+                id: true,
+                username: true,
+              },
+            },
           },
         },
       },
@@ -185,6 +226,18 @@ export class MessagesService {
             username: true,
           },
         },
+        replyToMessage: {
+          select: {
+            id: true,
+            text: true,
+            author: {
+              select: {
+                id: true,
+                username: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -208,6 +261,18 @@ export class MessagesService {
           select: {
             id: true,
             username: true,
+          },
+        },
+        replyToMessage: {
+          select: {
+            id: true,
+            text: true,
+            author: {
+              select: {
+                id: true,
+                username: true,
+              },
+            },
           },
         },
       },
@@ -249,6 +314,14 @@ export class MessagesService {
         id: string;
         username: string;
       };
+      replyToMessage?: {
+        id: string;
+        text: string;
+        author: {
+          id: string;
+          username: string;
+        };
+      } | null;
     },
     currentUserId: string,
   ) {
@@ -258,6 +331,13 @@ export class MessagesService {
       createdAt: message.createdAt,
       updatedAt: message.updatedAt,
       author: message.author,
+      replyTo: message.replyToMessage
+        ? {
+            id: message.replyToMessage.id,
+            text: message.replyToMessage.text,
+            author: message.replyToMessage.author,
+          }
+        : null,
       isOwn: message.author.id === currentUserId,
     };
   }

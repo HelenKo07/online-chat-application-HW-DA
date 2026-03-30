@@ -248,6 +248,15 @@ export class AuthService {
         },
       });
 
+      await tx.directAttachment.updateMany({
+        where: {
+          uploadedById: userId,
+        },
+        data: {
+          uploadedById: deletedUser.id,
+        },
+      });
+
       await tx.session.deleteMany({
         where: {
           userId,

@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { SessionUser } from '../common/session-user.type';
+import { normalizeUserPair } from '../common/user-pair';
 import { DatabaseService } from '../database/database.service';
 import { extname, resolve } from 'path';
 import { mkdir, writeFile } from 'fs/promises';
@@ -130,6 +131,126 @@ export class AttachmentsService {
     };
   }
 
+  async listDirectAttachments(friendId: string, userId: string) {
+    const chat = await this.findDirectChatPair(friendId, userId);
+    if (!chat) {
+      return [];
+    }
+
+    const attachments = await this.database.directAttachment.findMany({
+      where: { directChatId: chat.id },
+      include: {
+        uploadedBy: {
+          select: {
+            id: true,
+            username: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+      take: 200,
+    });
+
+    return attachments.map((attachment) => ({
+      id: attachment.id,
+      directChatId: attachment.directChatId,
+      originalName: attachment.originalName,
+      mimeType: attachment.mimeType,
+      sizeBytes: attachment.sizeBytes,
+      comment: attachment.comment,
+      createdAt: attachment.createdAt,
+      uploadedBy: attachment.uploadedBy,
+    }));
+  }
+
+  async uploadDirectAttachment(
+    friendId: string,
+    user: SessionUser,
+    file: UploadFile | undefined,
+    input: { comment?: string },
+  ) {
+    const blocked = await this.getDirectBlockState(user.id, friendId);
+    if (blocked) {
+      throw new ForbiddenException('Direct chat is frozen due to user ban');
+    }
+
+    const isFriend = await this.areUsersFriends(user.id, friendId);
+    if (!isFriend) {
+      throw new ForbiddenException('Direct attachments are available only between friends');
+    }
+
+    if (!file) {
+      throw new BadRequestException('File is required');
+    }
+
+    this.validateFile(file);
+
+    const chat = await this.getOrCreateDirectChat(friendId, user.id);
+    const chatDir = resolve(UPLOADS_ROOT, 'direct', chat.id);
+    await mkdir(chatDir, { recursive: true });
+
+    const safeExtension = extname(file.originalname).slice(0, 20);
+    const generatedName = `${randomUUID()}${safeExtension}`;
+    const relativePath = `direct/${chat.id}/${generatedName}`;
+    const absolutePath = resolve(UPLOADS_ROOT, relativePath);
+
+    await writeFile(absolutePath, file.buffer);
+
+    const attachment = await this.database.directAttachment.create({
+      data: {
+        directChatId: chat.id,
+        uploadedById: user.id,
+        originalName: file.originalname,
+        mimeType: file.mimetype,
+        sizeBytes: file.size,
+        storagePath: relativePath,
+        comment: input.comment?.trim() || null,
+      },
+      include: {
+        uploadedBy: {
+          select: {
+            id: true,
+            username: true,
+          },
+        },
+      },
+    });
+
+    return {
+      id: attachment.id,
+      directChatId: attachment.directChatId,
+      originalName: attachment.originalName,
+      mimeType: attachment.mimeType,
+      sizeBytes: attachment.sizeBytes,
+      comment: attachment.comment,
+      createdAt: attachment.createdAt,
+      uploadedBy: attachment.uploadedBy,
+    };
+  }
+
+  async getDirectDownloadPayload(friendId: string, attachmentId: string, userId: string) {
+    const chat = await this.findDirectChatPair(friendId, userId);
+    if (!chat) {
+      throw new NotFoundException('Direct chat not found');
+    }
+
+    const attachment = await this.database.directAttachment.findFirst({
+      where: {
+        id: attachmentId,
+        directChatId: chat.id,
+      },
+    });
+
+    if (!attachment) {
+      throw new NotFoundException('Attachment not found');
+    }
+
+    return {
+      absolutePath: resolve(UPLOADS_ROOT, attachment.storagePath),
+      originalName: attachment.originalName,
+    };
+  }
+
   private validateFile(file: UploadFile) {
     if (file.size <= 0) {
       throw new BadRequestException('Uploaded file is empty');
@@ -171,5 +292,77 @@ export class AttachmentsService {
     }
 
     throw new ForbiddenException('Join the room to access attachments');
+  }
+
+  private async findDirectChatPair(friendId: string, userId: string) {
+    const friend = await this.database.user.findUnique({
+      where: { id: friendId },
+      select: { id: true },
+    });
+
+    if (!friend) {
+      throw new NotFoundException('Friend not found');
+    }
+
+    const pair = normalizeUserPair(userId, friendId);
+    return this.database.directChat.findUnique({
+      where: {
+        lowUserId_highUserId: pair,
+      },
+    });
+  }
+
+  private async getOrCreateDirectChat(friendId: string, userId: string) {
+    const pair = normalizeUserPair(userId, friendId);
+    const existing = await this.database.directChat.findUnique({
+      where: {
+        lowUserId_highUserId: pair,
+      },
+    });
+
+    if (existing) {
+      return existing;
+    }
+
+    return this.database.directChat.create({
+      data: pair,
+    });
+  }
+
+  private async areUsersFriends(userId: string, friendId: string) {
+    const pair = normalizeUserPair(userId, friendId);
+    const friendship = await this.database.friendship.findUnique({
+      where: {
+        lowUserId_highUserId: pair,
+      },
+      select: { id: true },
+    });
+
+    return Boolean(friendship);
+  }
+
+  private async getDirectBlockState(userId: string, friendId: string) {
+    const [blockedByActor, blockedByTarget] = await Promise.all([
+      this.database.userBlock.findUnique({
+        where: {
+          blockerId_blockedId: {
+            blockerId: userId,
+            blockedId: friendId,
+          },
+        },
+        select: { id: true },
+      }),
+      this.database.userBlock.findUnique({
+        where: {
+          blockerId_blockedId: {
+            blockerId: friendId,
+            blockedId: userId,
+          },
+        },
+        select: { id: true },
+      }),
+    ]);
+
+    return Boolean(blockedByActor || blockedByTarget);
   }
 }

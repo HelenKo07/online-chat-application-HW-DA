@@ -86,7 +86,7 @@ export function useDirectChats(enabled: boolean, friends: Friend[]) {
     })();
   }, [selectedFriendId, enabled]);
 
-  const sendMessage = async (text: string) => {
+  const sendMessage = async (text: string, replyToMessageId?: string) => {
     if (!selectedFriendId) {
       return;
     }
@@ -95,7 +95,10 @@ export function useDirectChats(enabled: boolean, friends: Friend[]) {
     setError(null);
 
     try {
-      const response = await api.sendDirectMessage(selectedFriendId, { text });
+      const response = await api.sendDirectMessage(selectedFriendId, {
+        text,
+        replyToMessageId,
+      });
       setMessages((current) => [...current, response.message]);
       await refreshChats({ silent: true });
     } catch (caughtError) {

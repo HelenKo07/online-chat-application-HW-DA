@@ -1,6 +1,8 @@
-import { DirectChatSummary, Friend, DirectMessage } from '../../types/api';
+import { DirectAttachment, DirectChatSummary, Friend, DirectMessage } from '../../types/api';
 import { MessageComposer } from '../messages/MessageComposer';
 import { useState } from 'react';
+import { AttachmentUploader } from '../attachments/AttachmentUploader';
+import { DirectAttachmentList } from './DirectAttachmentList';
 
 type DirectChatPanelProps = {
   chats: DirectChatSummary[];
@@ -12,8 +14,14 @@ type DirectChatPanelProps = {
   isEditing: boolean;
   isFrozen: boolean;
   freezeReason: 'blocked_by_you' | 'blocked_by_other' | null;
+  directAttachments: {
+    attachments: DirectAttachment[];
+    isLoading: boolean;
+    isUploading: boolean;
+    onUpload: (file: File, comment?: string) => Promise<void>;
+  };
   onSelectFriend: (friendId: string) => void;
-  onSendMessage: (text: string) => Promise<void>;
+  onSendMessage: (text: string, replyToMessageId?: string) => Promise<void>;
   onEditMessage: (messageId: string, text: string) => Promise<void>;
 };
 
@@ -27,6 +35,7 @@ export function DirectChatPanel({
   isEditing,
   isFrozen,
   freezeReason,
+  directAttachments,
   onSelectFriend,
   onSendMessage,
   onEditMessage,
@@ -34,6 +43,11 @@ export function DirectChatPanel({
   const [editingMessage, setEditingMessage] = useState<{
     id: string;
     text: string;
+  } | null>(null);
+  const [replyToMessage, setReplyToMessage] = useState<{
+    id: string;
+    text: string;
+    author: { username: string };
   } | null>(null);
 
   const isEdited = (message: DirectMessage) =>
@@ -126,8 +140,28 @@ export function DirectChatPanel({
                             Edit
                           </button>
                         ) : null}
+                        <button
+                          className="button button--ghost"
+                          type="button"
+                          onClick={() =>
+                            setReplyToMessage({
+                              id: message.id,
+                              text: message.text,
+                              author: { username: message.author.username },
+                            })
+                          }
+                          disabled={isEditing}
+                        >
+                          Reply
+                        </button>
                       </div>
                     </div>
+                    {message.replyTo ? (
+                      <blockquote className="reply-reference">
+                        <strong>{message.replyTo.author.username}</strong>
+                        <p>{message.replyTo.text}</p>
+                      </blockquote>
+                    ) : null}
                     {editingMessage?.id === message.id ? (
                       <form
                         className="message__edit-form"
@@ -182,7 +216,28 @@ export function DirectChatPanel({
           <MessageComposer
             canSend={Boolean(selectedFriend) && !isFrozen}
             isSending={isSending}
-            onSend={onSendMessage}
+            title="Direct message"
+            enabledPlaceholder="Write a direct message..."
+            disabledPlaceholder="Direct chat is unavailable"
+            replyTo={replyToMessage}
+            onCancelReply={() => setReplyToMessage(null)}
+            onSend={async (text) => {
+              await onSendMessage(text, replyToMessage?.id);
+              setReplyToMessage(null);
+            }}
+          />
+
+          <AttachmentUploader
+            canUpload={Boolean(selectedFriend) && !isFrozen}
+            isUploading={directAttachments.isUploading}
+            onUpload={directAttachments.onUpload}
+          />
+
+          <DirectAttachmentList
+            friendId={selectedFriend?.id ?? null}
+            attachments={directAttachments.attachments}
+            isLoading={directAttachments.isLoading}
+            canView={Boolean(selectedFriend)}
           />
         </div>
       </div>

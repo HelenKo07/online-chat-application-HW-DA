@@ -15,6 +15,11 @@ type MessageListProps = {
   onLoadOlder: () => Promise<void>;
   onDeleteMessage: (messageId: string) => Promise<void>;
   onEditMessage: (messageId: string, text: string) => Promise<void>;
+  onReplyToMessage: (message: {
+    id: string;
+    text: string;
+    author: { username: string };
+  }) => void;
 };
 
 export function MessageList({
@@ -30,6 +35,7 @@ export function MessageList({
   onLoadOlder,
   onDeleteMessage,
   onEditMessage,
+  onReplyToMessage,
 }: MessageListProps) {
   const [pendingDeleteMessage, setPendingDeleteMessage] = useState<{
     id: string;
@@ -124,6 +130,20 @@ export function MessageList({
                       Edit
                     </button>
                   ) : null}
+                  <button
+                    className="button button--ghost"
+                    type="button"
+                    onClick={() =>
+                      onReplyToMessage({
+                        id: message.id,
+                        text: message.text,
+                        author: { username: message.author.username },
+                      })
+                    }
+                    disabled={isDeleting || isEditing}
+                  >
+                    Reply
+                  </button>
                   {message.isOwn || canModerate ? (
                     <button
                       className="button button--ghost"
@@ -141,6 +161,12 @@ export function MessageList({
                   ) : null}
                 </div>
               </div>
+              {message.replyTo ? (
+                <blockquote className="reply-reference">
+                  <strong>{message.replyTo.author.username}</strong>
+                  <p>{message.replyTo.text}</p>
+                </blockquote>
+              ) : null}
               {editingMessage?.id === message.id ? (
                 <form
                   className="message__edit-form"

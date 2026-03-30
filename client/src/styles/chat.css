@@ -116,6 +116,35 @@
   color: var(--text);
 }
 
+.reply-reference {
+  margin: 0 0 0.7rem;
+  padding: 0.5rem 0.65rem;
+  border-left: 3px solid rgba(234, 88, 12, 0.55);
+  background: rgba(15, 23, 42, 0.04);
+  border-radius: 0.65rem;
+}
+
+.reply-reference p {
+  color: var(--muted);
+  margin-top: 0.2rem;
+}
+
+.reply-preview {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 0.9rem;
+  border: 1px solid rgba(234, 88, 12, 0.35);
+  background: rgba(255, 237, 213, 0.55);
+}
+
+.reply-preview__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
 .composer-card {
   display: grid;
   gap: 1rem;
@@ -196,6 +225,7 @@
 .friend-card,
 .request-card {
   width: 100%;
+  margin-right: 0.4rem;
   padding: 0.9rem 1rem;
   border-radius: 1.15rem;
   background: var(--surface-strong);

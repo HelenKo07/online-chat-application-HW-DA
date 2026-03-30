@@ -11,6 +11,7 @@ import { AppHeader } from './components/layout/AppHeader';
 import { MessageComposer } from './components/messages/MessageComposer';
 import { MessageList } from './components/messages/MessageList';
 import { useDirectChats } from './hooks/useDirectChats';
+import { useDirectAttachments } from './hooks/useDirectAttachments';
 import { useAccountSettings } from './hooks/useAccountSettings';
 import { useFriends } from './hooks/useFriends';
 import { usePresenceHeartbeat } from './hooks/usePresenceHeartbeat';
@@ -24,15 +25,24 @@ import { useRoomModeration } from './hooks/useRoomModeration';
 import { useRoomMessages } from './hooks/useRoomMessages';
 import { useRooms } from './hooks/useRooms';
 import { useSession } from './hooks/useSession';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function App() {
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [roomReplyToMessage, setRoomReplyToMessage] = useState<{
+    id: string;
+    text: string;
+    author: { username: string };
+  } | null>(null);
   const session = useSession();
   const account = useAccountSettings(Boolean(session.user), session.user?.email);
   const rooms = useRooms(Boolean(session.user));
   const friends = useFriends(Boolean(session.user));
   const directChats = useDirectChats(Boolean(session.user), friends.friends);
+  const directAttachments = useDirectAttachments(
+    directChats.selectedFriendId,
+    Boolean(session.user && directChats.selectedFriendId),
+  );
   const roomInvitations = useRoomInvitations(Boolean(session.user), rooms.refreshRooms);
   const roomAttachments = useRoomAttachments(
     rooms.selectedRoom?.id ?? null,
@@ -50,6 +60,10 @@ export default function App() {
     Boolean(session.user && rooms.selectedRoom?.isMember),
     rooms.refreshRooms,
   );
+
+  useEffect(() => {
+    setRoomReplyToMessage(null);
+  }, [rooms.selectedRoom?.id]);
 
   if (session.isLoading) {
     return (
@@ -87,8 +101,7 @@ export default function App() {
             <p className="eyebrow">Classic layout</p>
             <h1>Chattrix</h1>
             <p>
-              Public room catalog, membership controls, and a clean structure for
-              the next stages.
+              A scalable chat platform with real-time messaging, rooms, and team collaboration.
             </p>
           </div>
 
@@ -143,6 +156,9 @@ export default function App() {
           {roomAttachments.error ? (
             <p className="form-error workspace__error">{roomAttachments.error}</p>
           ) : null}
+          {directAttachments.error ? (
+            <p className="form-error workspace__error">{directAttachments.error}</p>
+          ) : null}
           {account.error ? <p className="form-error workspace__error">{account.error}</p> : null}
           {rooms.isLoading ? (
             <section className="room-stage room-stage--empty">
@@ -174,11 +190,20 @@ export default function App() {
                 onLoadOlder={roomMessages.loadOlder}
                 onDeleteMessage={roomMessages.deleteMessage}
                 onEditMessage={roomMessages.editMessage}
+                onReplyToMessage={setRoomReplyToMessage}
               />
               <MessageComposer
                 canSend={Boolean(rooms.selectedRoom?.isMember)}
                 isSending={roomMessages.isSending}
-                onSend={roomMessages.sendMessage}
+                title="Room message"
+                enabledPlaceholder="Write a message to this room..."
+                disabledPlaceholder="Join the room to start messaging"
+                replyTo={roomReplyToMessage}
+                onCancelReply={() => setRoomReplyToMessage(null)}
+                onSend={async (text) => {
+                  await roomMessages.sendMessage(text, roomReplyToMessage?.id);
+                  setRoomReplyToMessage(null);
+                }}
               />
               <AttachmentUploader
                 canUpload={Boolean(rooms.selectedRoom?.isMember)}
@@ -215,6 +240,12 @@ export default function App() {
                 isEditing={directChats.isEditing}
                 isFrozen={directChats.isFrozen}
                 freezeReason={directChats.freezeReason}
+                directAttachments={{
+                  attachments: directAttachments.attachments,
+                  isLoading: directAttachments.isLoading,
+                  isUploading: directAttachments.isUploading,
+                  onUpload: directAttachments.uploadAttachment,
+                }}
                 onSelectFriend={directChats.setSelectedFriendId}
                 onSendMessage={directChats.sendMessage}
                 onEditMessage={directChats.editMessage}
