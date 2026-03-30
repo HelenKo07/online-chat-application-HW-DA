@@ -20,17 +20,28 @@ const API_BASE = '/api';
 
 async function readJson<T>(response: Response): Promise<T> {
   const text = await response.text();
-  const data = text ? (JSON.parse(text) as T & { message?: string }) : ({} as T);
+  let data: (T & { message?: string }) | null = null;
+
+  if (text) {
+    try {
+      data = JSON.parse(text) as T & { message?: string };
+    } catch {
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status} ${response.statusText}`);
+      }
+      throw new Error('Invalid JSON response from server');
+    }
+  }
 
   if (!response.ok) {
     const message =
       typeof data === 'object' && data && 'message' in data
         ? String(data.message)
-        : 'Request failed';
+        : `HTTP ${response.status} ${response.statusText}`;
     throw new Error(message);
   }
 
-  return data as T;
+  return (data ?? ({} as T)) as T;
 }
 
 async function apiRequest<T>(path: string, init?: RequestInit) {

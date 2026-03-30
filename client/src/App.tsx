@@ -222,7 +222,12 @@ export default function App() {
                 outgoingRequests={friends.outgoingRequests}
                 blockedUsers={friends.blockedUsers}
                 isMutating={friends.isMutating}
-                onAccept={friends.acceptRequest}
+                onAccept={async (requestId) => {
+                  const acceptedFriendId = await friends.acceptRequest(requestId);
+                  if (acceptedFriendId) {
+                    directChats.setSelectedFriendId(acceptedFriendId);
+                  }
+                }}
                 onDecline={friends.declineRequest}
                 onBlockUser={friends.blockUser}
                 onUnblockUser={friends.unblockUser}

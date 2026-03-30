@@ -52,6 +52,23 @@ export function DirectChatPanel({
 
   const isEdited = (message: DirectMessage) =>
     new Date(message.updatedAt).getTime() > new Date(message.createdAt).getTime();
+  const composerNotice = !selectedFriend
+    ? {
+        text: 'Choose a friend to start messaging. If they are missing, send a friend request and wait for acceptance.',
+        className: 'form-error',
+      }
+    : isFrozen
+      ? {
+          text:
+            freezeReason === 'blocked_by_you'
+              ? 'You blocked this user, so sending messages is disabled.'
+              : 'This user blocked you, so sending messages is disabled.',
+          className: 'form-error',
+        }
+      : {
+          text: 'Tip: to message a new user, send a friend request first and wait for acceptance.',
+          className: 'muted-copy',
+        };
 
   return (
     <section className="panel direct-panel">
@@ -226,6 +243,7 @@ export function DirectChatPanel({
               setReplyToMessage(null);
             }}
           />
+          <p className={composerNotice.className}>{composerNotice.text}</p>
 
           <AttachmentUploader
             canUpload={Boolean(selectedFriend) && !isFrozen}

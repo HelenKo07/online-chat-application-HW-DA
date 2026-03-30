@@ -225,11 +225,14 @@
 .friend-card,
 .request-card {
   width: 100%;
-  margin-right: 0.4rem;
   padding: 0.9rem 1rem;
   border-radius: 1.15rem;
   background: var(--surface-strong);
   border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.request-card-margin {
+  margin-right: 0.5rem;
 }
 
 .friend-card {

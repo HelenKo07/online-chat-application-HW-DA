@@ -13,6 +13,7 @@ services:
     build:
       context: ./server
       dockerfile: Dockerfile
+    command: sh -c "npx prisma db push && npm run start:prod"
     environment:
       PORT: 3000
       DATABASE_URL: postgresql://chat:chat@postgres:5432/chat

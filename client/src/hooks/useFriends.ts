@@ -76,8 +76,9 @@ export function useFriends(enabled: boolean) {
     setError(null);
 
     try {
-      await api.acceptFriendRequest(requestId);
+      const response = await api.acceptFriendRequest(requestId);
       await refresh();
+      return response.friend.id;
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : 'Failed to accept request');
       throw caughtError;

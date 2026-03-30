@@ -72,7 +72,7 @@ export function AccountPanel({
           <div className="request-group">
             {sessions.map((session) => (
               <article key={session.id} className="request-card">
-                <strong>{session.isCurrent ? 'Current session' : 'Active session'}</strong>
+                <strong className="request-card-margin">{session.isCurrent ? 'Current session' : 'Active session'}</strong>
                 <small>{session.ipAddress || 'Unknown IP'}</small>
                 <small>{session.userAgent || 'Unknown browser'}</small>
                 {!session.isCurrent ? (

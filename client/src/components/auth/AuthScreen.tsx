@@ -22,12 +22,7 @@ export function AuthScreen({
     <section className="auth-screen">
       <div className="auth-card">
         <div className="auth-card__hero">
-          <p className="eyebrow">Stage 3 rooms</p>
           <h1>Classic web chat with real accounts and public rooms</h1>
-          <p className="auth-card__lead">
-            We already have PostgreSQL, cookie sessions, and NestJS auth. Now the
-            UI is component-based and ready for rooms.
-          </p>
         </div>
 
         <div className="auth-card__tabs">
